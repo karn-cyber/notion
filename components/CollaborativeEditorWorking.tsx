@@ -53,7 +53,7 @@ function CollaborativeEditorWorking({
     console.log("🔍 Working collaborative editor connecting to room:", roomId)
     const timer = setTimeout(() => {
       setIsConnected(true)
-      console.log("✅ Working collaboration connected!")
+      console.log("Working collaboration connected!")
     }, 500)
     
     return () => clearTimeout(timer)
@@ -91,7 +91,7 @@ function CollaborativeEditorWorking({
           if (data.type === 'content' && data.sessionId !== sessionId) {
             // Update content from other tab
             setContent(data.content)
-            console.log("📝 Content updated from other tab")
+            console.log("Content updated from other tab")
           }
         } catch (error) {
           console.error("Error parsing storage data:", error)
@@ -197,7 +197,7 @@ function CollaborativeEditorWorking({
       {/* Editor */}
       <div 
         ref={containerRef}
-        className="relative bg-white rounded-lg shadow-sm border overflow-hidden"
+        className="relative bg-white dark:bg-gray-900 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden transition-colors"
         onPointerMove={handlePointerMove}
         onPointerLeave={handlePointerLeave}
       >
@@ -225,18 +225,29 @@ function CollaborativeEditorWorking({
         <textarea
           value={content}
           onChange={handleTextChange}
-          placeholder="Start writing... Open this in another tab to see REAL cross-tab collaboration!"
-          className="w-full h-96 p-6 border-none outline-none resize-none text-gray-800 placeholder-gray-400 text-base"
+          placeholder="Start writing, you can also share this doc and collaborate in real-time!"
+          className="w-full h-96 p-6 border-none outline-none resize-none text-gray-800 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-500 text-base leading-relaxed bg-transparent font-sans"
+          style={{
+            lineHeight: '1.6',
+            wordWrap: 'break-word',
+            whiteSpace: 'pre-wrap',
+            overflowWrap: 'break-word',
+            fontFamily: 'system-ui, -apple-system, sans-serif'
+          }}
+          spellCheck={true}
+          autoComplete="off"
+          autoCorrect="on"
+          autoCapitalize="sentences"
         />
       </div>
 
-      <div className="text-center text-xs text-gray-400">
+      <div className="text-center text-xs text-gray-400 dark:text-gray-500">
         Cross-tab collaboration • Room: {roomId} • {otherCursors.size + 1} users connected
       </div>
       
       {/* Debug info */}
-      <details className="text-xs text-gray-500 bg-gray-50 p-2 rounded">
-        <summary>Debug Info (click to expand)</summary>
+      <details className="text-xs text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800 p-2 rounded transition-colors">
+        <summary className="cursor-pointer">Debug Info (click to expand)</summary>
         <div className="mt-2 space-y-1">
           <div>Connection: {isConnected ? '✅ Connected' : '❌ Disconnected'}</div>
           <div>Session ID: {sessionId}</div>

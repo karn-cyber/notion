@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ClerkProvider } from "@clerk/nextjs";
+import { ThemeProvider } from "@/components/ui/theme-provider";
 import Header from "@/components/Header";
 import Sidebar from "@/components/Sidebar";
 
@@ -29,18 +30,25 @@ export default function RootLayout({
 }>) {
   return (
     <ClerkProvider>
-    <html lang="en">
-      <body>
-      <Header/>
-      <div className="flex min-h-screen">
-        {/* sidebar */}
-        <Sidebar/>
-        <div className="flex-1 p-4 bg-gray-100 overflow-y-auto scrollbar-hide">
-            {children}
-        </div>
-      </div>
-      </body>
-    </html>
+      <html lang="en" suppressHydrationWarning>
+        <body className={`${geistSans.variable} ${geistMono.variable} font-sans`}>
+          <ThemeProvider
+            defaultTheme="system"
+            storageKey="notion-theme"
+          >
+            <div className="min-h-screen bg-background text-foreground">
+              <Header/>
+              <div className="flex min-h-screen">
+                {/* sidebar */}
+                <Sidebar/>
+                <div className="flex-1 p-4 bg-background transition-colors overflow-y-auto scrollbar-hide">
+                    {children}
+                </div>
+              </div>
+            </div>
+          </ThemeProvider>
+        </body>
+      </html>
     </ClerkProvider>
   );
 }
