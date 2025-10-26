@@ -12,6 +12,8 @@ export type Presence = {
   name?: string;
   avatar?: string;
   color?: string;
+  isTyping?: boolean;
+  lastSeen?: number;
 };
 
 export type Storage = {

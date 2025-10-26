@@ -30,35 +30,79 @@ interface LiveCollaborativeEditorProps {
   userColor: string
 }
 
-// Premium cursor component
-function PremiumCursor({ x, y, name, color }: { x: number; y: number; name: string; color: string }) {
+// Premium cursor component with enhanced animations
+function PremiumCursor({ x, y, name, color, isTyping }: { 
+  x: number; 
+  y: number; 
+  name: string; 
+  color: string; 
+  isTyping?: boolean;
+}) {
   return (
     <div
-      className="pointer-events-none absolute z-50 transition-all duration-150 ease-out"
-      style={{ left: x - 12, top: y - 12 }}
+      className="pointer-events-none absolute z-50 transition-all duration-100 ease-out"
+      style={{ 
+        left: x - 12, 
+        top: y - 12,
+        transform: 'translate3d(0, 0, 0)' // Force hardware acceleration
+      }}
     >
       <div className="relative">
-        {/* Cursor SVG with enhanced styling */}
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="drop-shadow-lg">
+        {/* Cursor SVG with enhanced styling and glow effect */}
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="drop-shadow-lg filter">
+          <defs>
+            <filter id={`glow-${name}`} x="-50%" y="-50%" width="200%" height="200%">
+              <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+              <feMerge> 
+                <feMergeNode in="coloredBlur"/>
+                <feMergeNode in="SourceGraphic"/> 
+              </feMerge>
+            </filter>
+          </defs>
           <path
             d="M5.65376 12.3673H5.46026L5.31717 12.4976L0.500002 16.8829L0.500002 1.19841L11.7841 12.3673H5.65376Z"
             fill={color}
             stroke="white"
             strokeWidth="1.5"
             className="filter drop-shadow-sm"
+            filter={`url(#glow-${name})`}
           />
         </svg>
         
-        {/* User name badge with premium styling */}
+        {/* User name badge with premium styling and animation */}
         <div
-          className="absolute top-5 left-2 px-2 py-1 text-xs text-white rounded-md whitespace-nowrap shadow-lg border border-white/20 backdrop-blur-sm"
+          className={cn(
+            "absolute top-5 left-2 px-2 py-1 text-xs text-white rounded-md whitespace-nowrap shadow-lg border border-white/20 backdrop-blur-sm animate-in fade-in-0 slide-in-from-bottom-1 duration-200",
+            isTyping && "animate-pulse"
+          )}
           style={{ backgroundColor: color }}
         >
           <div className="flex items-center space-x-1">
-            <div className="w-1.5 h-1.5 bg-white/80 rounded-full"></div>
-            <span className="font-medium">{name}</span>
+            <div 
+              className={cn(
+                "w-1.5 h-1.5 bg-white/80 rounded-full",
+                isTyping ? "animate-ping" : "animate-pulse"
+              )}
+              style={{ animationDuration: isTyping ? '1s' : '2s' }}
+            ></div>
+            <span className="font-medium text-shadow-sm">
+              {name}
+              {isTyping && " is typing..."}
+            </span>
           </div>
         </div>
+        
+        {/* Cursor trail effect - more active when typing */}
+        <div 
+          className={cn(
+            "absolute -inset-1 bg-gradient-radial from-transparent to-transparent opacity-20 rounded-full",
+            isTyping ? "animate-ping" : "animate-pulse"
+          )}
+          style={{ 
+            background: `radial-gradient(circle, ${color}40 0%, transparent 70%)`,
+            animationDuration: isTyping ? '0.8s' : '1.5s'
+          }}
+        />
       </div>
     </div>
   )
@@ -103,23 +147,51 @@ function LiveCollaborativeEditor({
     }
   }, [room])
 
-  // Handle mouse movement for cursor tracking
+  // Handle mouse movement for cursor tracking with throttling
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
     const rect = e.currentTarget.getBoundingClientRect()
+    const x = e.clientX - rect.left
+    const y = e.clientY - rect.top
+    
+    // Only update if cursor moved significantly (reduces network calls)
     updateMyPresence({
-      cursor: {
-        x: e.clientX - rect.left,
-        y: e.clientY - rect.top
-      },
+      cursor: { x, y },
       name: userName,
-      color: userColor
+      color: userColor,
+      lastSeen: Date.now()
     })
   }, [updateMyPresence, userName, userColor])
 
-  // Handle mouse leave
+  // Handle mouse leave with fade out
   const handleMouseLeave = useCallback(() => {
-    updateMyPresence({ cursor: null })
-  }, [updateMyPresence])
+    updateMyPresence({ 
+      cursor: null,
+      name: userName,
+      color: userColor,
+      lastSeen: Date.now()
+    })
+  }, [updateMyPresence, userName, userColor])
+
+  // Handle focus events for better presence tracking
+  const handleFocus = useCallback(() => {
+    updateMyPresence({
+      cursor: myPresence.cursor,
+      name: userName,
+      color: userColor,
+      isTyping: true,
+      lastSeen: Date.now()
+    })
+  }, [updateMyPresence, userName, userColor, myPresence.cursor])
+
+  const handleBlur = useCallback(() => {
+    updateMyPresence({
+      cursor: myPresence.cursor,
+      name: userName,
+      color: userColor,
+      isTyping: false,
+      lastSeen: Date.now()
+    })
+  }, [updateMyPresence, userName, userColor, myPresence.cursor])
 
   // Handle content changes
   const handleContentChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -164,6 +236,13 @@ function LiveCollaborativeEditor({
                 <span className="text-sm text-muted-foreground">
                   {others.length + 1} user{others.length === 0 ? '' : 's'} active
                 </span>
+                {/* Live typing indicator */}
+                {others.some(other => other.presence?.isTyping) && (
+                  <div className="flex items-center space-x-1 text-xs text-green-600">
+                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                    <span>Someone is typing...</span>
+                  </div>
+                )}
               </div>
             </div>
             
@@ -208,6 +287,8 @@ function LiveCollaborativeEditor({
               className="w-full h-full p-6 border-none outline-none resize-none bg-transparent text-foreground"
               value={localContent}
               onChange={handleContentChange}
+              onFocus={handleFocus}
+              onBlur={handleBlur}
               placeholder="Start typing your document..."
               style={{ minHeight: '500px' }}
             />
@@ -223,6 +304,7 @@ function LiveCollaborativeEditor({
                   y={other.presence.cursor.y}
                   name={other.presence.name || 'Anonymous'}
                   color={other.presence.color || '#6366f1'}
+                  isTyping={other.presence.isTyping}
                 />
               )
             })}
