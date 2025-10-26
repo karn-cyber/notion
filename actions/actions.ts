@@ -57,7 +57,7 @@ export async function deleteDocument(docId: string) {
 
     const userEmail = sessionClaims.email;
 
-    console.log("🗑️ [UPDATED] Deleting document:", { docId, userId, email: userEmail });
+    console.log("[UPDATED] Deleting document:", { docId, userId, email: userEmail });
 
     try {
         // Check if user owns the document
@@ -71,7 +71,7 @@ export async function deleteDocument(docId: string) {
         const docData = doc.data();
         
         // Debug: Log document data and user data for comparison
-        console.log("📋 Document data:", {
+        console.log("Document data:", {
             docUserId: docData?.userId,
             docUserEmail: docData?.userEmail,
             currentUserId: userId,
@@ -95,7 +95,7 @@ export async function deleteDocument(docId: string) {
                     .get();
                 
                 roomsOwnership = roomDoc.exists && roomDoc.data()?.role === 'owner';
-                console.log("🏠 Rooms ownership check:", { exists: roomDoc.exists, role: roomDoc.data()?.role });
+                console.log("Rooms ownership check:", { exists: roomDoc.exists, role: roomDoc.data()?.role });
             } catch (error) {
                 console.log("⚠️ Could not check rooms ownership:", error);
             }
@@ -115,7 +115,7 @@ export async function deleteDocument(docId: string) {
             throw new Error("Not authorized to delete this document");
         }
 
-        console.log("✅ Authorization successful, proceeding with deletion");
+        console.log("Authorization successful, proceeding with deletion");
 
         // Delete the document
         await docRef.delete();
@@ -137,11 +137,11 @@ export async function deleteDocument(docId: string) {
         const deletePromises = allUserRooms.docs.map(roomDoc => roomDoc.ref.delete());
         await Promise.all(deletePromises);
 
-        console.log("✅ [UPDATED] Document deleted successfully:", { docId, userId, email: userEmail });
+        console.log("[UPDATED] Document deleted successfully:", { docId, userId, email: userEmail });
 
         return { success: true };
     } catch (error) {
-        console.error("❌ Error deleting document:", error);
+        console.error("Error deleting document:", error);
         throw error;
     }
 }

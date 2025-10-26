@@ -6,6 +6,7 @@ import { useCreateBlockNote } from "@blocknote/react"
 import { BlockNoteView } from "@blocknote/shadcn"
 import { useCallback, useEffect, useState } from "react"
 
+// will make a chat/comment feature too 
 interface BlockNoteEditorProps {
   roomId: string
   initialContent: string
