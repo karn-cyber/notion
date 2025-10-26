@@ -219,6 +219,36 @@ export function ShareDialog({
 
         console.log('✅ Document updated successfully')
 
+        // Create room access for new collaborators (for Liveblocks)
+        console.log('🏠 Creating room access for collaborators...')
+        const roomAccessPromises = invites.map(async (invite) => {
+          try {
+            // Use the Firebase admin through an API call since we can't use it client-side
+            const response = await fetch('/api/create-room-access', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                userEmail: invite.email,
+                documentId: documentId,
+                role: invite.role
+              })
+            })
+            
+            if (response.ok) {
+              console.log('✅ Room access created for:', invite.email)
+            } else {
+              console.warn('⚠️ Failed to create room access for:', invite.email)
+            }
+          } catch (roomError) {
+            console.warn('⚠️ Failed to create room access for:', invite.email, roomError)
+          }
+        })
+        
+        // Wait for room access creation (but don't fail if some fail)
+        await Promise.allSettled(roomAccessPromises)
+
         // Send email notifications
         console.log('📧 Creating invite notifications...')
         const notificationPromises = pendingInvites.map(async (invite) => {

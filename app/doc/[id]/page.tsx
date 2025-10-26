@@ -2,13 +2,19 @@
 import React from 'react'
 import { useParams } from 'next/navigation'
 import DocumentWithRealCollab from '@/components/DocumentWithRealCollab'
+import { RoomProvider } from '@/lib/liveblocks'
 
 function DocumentPage() {
   const params = useParams()
   const id = params.id as string
 
-  return <div className="flex flex-col flex-1 min-h-screen"><DocumentWithRealCollab id={id} />
-  </div>
+  return (
+    <RoomProvider id={id} initialPresence={{ cursor: null }} initialStorage={{ content: "" }}>
+      <div className="flex flex-col flex-1 min-h-screen">
+        <DocumentWithRealCollab id={id} />
+      </div>
+    </RoomProvider>
+  )
 }
 
 export default DocumentPage;

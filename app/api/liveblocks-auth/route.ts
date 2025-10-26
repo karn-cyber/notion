@@ -34,7 +34,7 @@ export async function POST() {
       },
     });
 
-    // Get user's accessible rooms
+    // Get user's accessible rooms from users collection
     const userRoomsByEmail = await adminDb
       .collectionGroup("rooms")
       .where("userId", "==", sessionClaims.email)
@@ -45,20 +45,52 @@ export async function POST() {
       .where("userId", "==", userId)
       .get();
 
-    // Combine results and remove duplicates
+    // Also check documents where user is a collaborator
+    const documentsQuery = await adminDb
+      .collection("documents")
+      .get();
+
+    const accessibleRooms = new Map();
+
+    // Add rooms from users collection
     const allRoomDocs = [...userRoomsByEmail.docs, ...userRoomsByUserId.docs];
-    const uniqueRooms = new Map();
     allRoomDocs.forEach(doc => {
       const data = doc.data();
-      uniqueRooms.set(data.roomId, doc);
+      accessibleRooms.set(data.roomId, {
+        role: data.role,
+        source: 'rooms'
+      });
+    });
+
+    // Check documents for collaborator access
+    documentsQuery.docs.forEach(doc => {
+      const data = doc.data();
+      const collaborators = data.collaborators || [];
+      
+      // Check if user is owner
+      if (data.userId === userId || data.userEmail === sessionClaims.email) {
+        accessibleRooms.set(doc.id, {
+          role: 'owner',
+          source: 'document_owner'
+        });
+      }
+      
+      // Check if user is in collaborators array
+      const userCollab = collaborators.find((c: any) => c.email === sessionClaims.email);
+      if (userCollab) {
+        accessibleRooms.set(doc.id, {
+          role: userCollab.role,
+          source: 'collaborator'
+        });
+      }
     });
     
-    console.log(`🔍 Liveblocks Auth - User has access to ${uniqueRooms.size} rooms`);
+    console.log(`🔍 Liveblocks Auth - User has access to ${accessibleRooms.size} rooms:`, 
+      Array.from(accessibleRooms.entries()));
 
     // Grant access to rooms user owns/has access to
-    for (const [roomId, roomDoc] of uniqueRooms) {
-      const roomData = roomDoc.data();
-      const role = roomData.role;
+    for (const [roomId, roomInfo] of accessibleRooms) {
+      const role = roomInfo.role;
       
       if (role === "owner" || role === "editor") {
         session.allow(roomId, session.FULL_ACCESS);
@@ -66,12 +98,11 @@ export async function POST() {
         session.allow(roomId, ["room:read"]);
       }
       
-      console.log(`✅ Granted ${role} access to room: ${roomId}`);
+      console.log(`✅ Granted ${role} access to room: ${roomId} (${roomInfo.source})`);
     }
 
-    // If user has no specific rooms, allow access to any room they try to join
-    // This is for development - in production you'd be more restrictive
-    if (uniqueRooms.size === 0) {
+    // For development: allow access to any room if user has no specific access
+    if (accessibleRooms.size === 0) {
       console.log("🔍 No specific rooms found, allowing wildcard access for development");
       session.allow("*", session.FULL_ACCESS);
     }
@@ -81,7 +112,7 @@ export async function POST() {
     console.log("✅ Liveblocks - Session authorized for user:", sessionClaims.email);
     return new Response(body, { status });
   } catch (error) {
-    console.error("Error in Liveblocks auth:", error);
+    console.error("❌ Error in Liveblocks auth:", error);
     return new Response("Internal server error", { status: 500 });
   }
 }

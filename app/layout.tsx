@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ClerkProvider } from "@clerk/nextjs";
 import { ThemeProvider } from "@/components/ui/theme-provider";
+import LiveBlocksProvider from "@/components/ui/LiveBlocksProvider";
 import Header from "@/components/Header";
 import Sidebar from "@/components/Sidebar";
 
@@ -36,16 +37,18 @@ export default function RootLayout({
             defaultTheme="system"
             storageKey="notion-theme"
           >
-            <div className="min-h-screen bg-background text-foreground">
-              <Header/>
-              <div className="flex min-h-screen">
-                {/* sidebar */}
-                <Sidebar/>
-                <div className="flex-1 p-4 bg-background transition-colors overflow-y-auto scrollbar-hide">
-                    {children}
+            <LiveBlocksProvider>
+              <div className="min-h-screen bg-background text-foreground">
+                <Header/>
+                <div className="flex min-h-screen">
+                  {/* sidebar */}
+                  <Sidebar/>
+                  <div className="flex-1 p-4 bg-background transition-colors overflow-y-auto scrollbar-hide">
+                      {children}
+                  </div>
                 </div>
               </div>
-            </div>
+            </LiveBlocksProvider>
           </ThemeProvider>
         </body>
       </html>

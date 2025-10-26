@@ -62,83 +62,49 @@ export function SharedDocumentsSidebar({ className }: SharedDocumentsSidebarProp
 
     const userEmail = user.emailAddresses[0].emailAddress
 
-    // Listen for documents where user is a collaborator
-    const collaboratorQuery = query(
+    // Create a simpler query to find documents where user is in collaborators
+    const documentsQuery = query(
       collection(db, 'documents'),
-      where('collaborators', 'array-contains-any', [
-        { email: userEmail },
-        { email: userEmail, role: 'editor' },
-        { email: userEmail, role: 'viewer' }
-      ]),
       orderBy('lastModified', 'desc')
     )
 
-    // Listen for documents owned by user
-    const ownerQuery = query(
-      collection(db, 'documents'),
-      where('userId', '==', user.id),
-      orderBy('lastModified', 'desc')
-    )
-
-    const unsubscribes: (() => void)[] = []
-
-    // Subscribe to collaborator documents
-    const unsubscribeCollab = onSnapshot(collaboratorQuery, (snapshot) => {
-      const collabDocs = snapshot.docs.map(doc => {
+    const unsubscribe = onSnapshot(documentsQuery, (snapshot) => {
+      const allDocs: SharedDocument[] = []
+      
+      snapshot.docs.forEach(doc => {
         const data = doc.data()
-        const userCollab = data.collaborators?.find((c: any) => c.email === userEmail)
+        const collaborators = data.collaborators || []
         
-        return {
-          id: doc.id,
-          title: data.title || 'Untitled',
-          owner: data.userId || 'Unknown',
-          ownerName: data.ownerName,
-          role: userCollab?.role || 'viewer',
-          lastModified: data.lastModified?.toDate() || new Date(),
-          createdAt: data.createdAt?.toDate() || new Date(),
-          collaborators: data.collaborators || [],
-          isStarred: data.starredBy?.includes(user.id)
-        } as SharedDocument
+        // Check if user is owner
+        const isOwner = data.userId === user.id || data.userEmail === userEmail
+        
+        // Check if user is in collaborators array
+        const userCollab = collaborators.find((c: any) => c.email === userEmail)
+        
+        // Include document if user is owner OR is in collaborators
+        if (isOwner || userCollab) {
+          const userRole = isOwner ? 'owner' : (userCollab?.role || 'viewer')
+          
+          allDocs.push({
+            id: doc.id,
+            title: data.title || 'Untitled',
+            owner: data.userId || data.userEmail || 'Unknown',
+            ownerName: data.ownerName || data.userEmail?.split('@')[0],
+            role: userRole,
+            lastModified: data.lastModified?.toDate() || data.updatedAt?.toDate() || new Date(),
+            createdAt: data.createdAt?.toDate() || new Date(),
+            collaborators: collaborators,
+            isStarred: data.starredBy?.includes(user.id)
+          })
+        }
       })
       
-      setSharedDocs(prev => {
-        const ownedIds = prev.filter(d => d.role === 'owner').map(d => d.id)
-        const filtered = collabDocs.filter(d => !ownedIds.includes(d.id))
-        return [...prev.filter(d => d.role === 'owner'), ...filtered]
-      })
+      console.log('📋 Found documents for user:', allDocs)
+      setSharedDocs(allDocs)
+      setLoading(false)
     })
 
-    // Subscribe to owned documents
-    const unsubscribeOwned = onSnapshot(ownerQuery, (snapshot) => {
-      const ownedDocs = snapshot.docs.map(doc => {
-        const data = doc.data()
-        
-        return {
-          id: doc.id,
-          title: data.title || 'Untitled',
-          owner: user.id,
-          ownerName: user.firstName || user.emailAddresses[0]?.emailAddress?.split('@')[0],
-          role: 'owner' as const,
-          lastModified: data.lastModified?.toDate() || new Date(),
-          createdAt: data.createdAt?.toDate() || new Date(),
-          collaborators: data.collaborators || [],
-          isStarred: data.starredBy?.includes(user.id)
-        } as SharedDocument
-      })
-      
-      setSharedDocs(prev => {
-        const sharedIds = prev.filter(d => d.role !== 'owner').map(d => d.id)
-        const filtered = prev.filter(d => !ownedDocs.find(owned => owned.id === d.id))
-        return [...ownedDocs, ...filtered]
-      })
-    })
-
-    unsubscribes.push(unsubscribeCollab, unsubscribeOwned)
-    setLoading(false)
-
-    return () => {
-      unsubscribes.forEach(unsub => unsub())
-    }
+    return () => unsubscribe()
   }, [user])
 
   const filteredDocs = sharedDocs.filter(doc => {
