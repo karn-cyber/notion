@@ -388,7 +388,6 @@ function DocumentWithRealCollab({id}:{id:string}) {
                                     {/* Collaborative Editor */}
                                     <div className="px-4 pb-4">
                                         <BlockNoteCollaborativeEditor 
-                                            roomId={id}
                                             initialContent={data?.content || ''}
                                             onContentChange={updateContent}
                                             userName={user?.firstName || user?.emailAddresses[0]?.emailAddress?.split('@')[0] || 'User'}
