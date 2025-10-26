@@ -1,5 +1,5 @@
 import React from 'react'
-import {motion,AnimatePresence,useMotionValue} from 'framer-motion'
+import {motion} from 'framer-motion'
 import stringToColor from '@/lib/stringToColor';
 function FollowPointer({
     x,

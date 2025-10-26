@@ -5,11 +5,12 @@ import { Button } from './ui/button';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/firebase';
 import { useDocumentData } from 'react-firebase-hooks/firestore';
-import { RoomProvider } from '@/lib/liveblocks';
-import CollaborativeEditor from './CollaborativeEditor';
 import { useUser } from '@clerk/nextjs';
 import LoadingSpinner from './ui/LoadingSpinner';
-import ErrorBoundary from './ErrorBoundary';
+
+// Lazy load the collaborative components
+const LazyRoomProvider = React.lazy(() => import('@/lib/liveblocks').then(module => ({ default: module.RoomProvider })))
+const LazyCollaborativeEditor = React.lazy(() => import('./CollaborativeEditorFast'))
 
 function Document({id}:{id:string}) {
     const [data, loading, error] = useDocumentData(doc(db,"documents",id));
@@ -42,12 +43,9 @@ function Document({id}:{id:string}) {
     };
 
     // Show minimal loading state only for actual loading
-    if (loading) {
+    if (loading && !data) {
         return (
-            <div className="max-w-6xl mx-auto p-4">
-                <div className="bg-yellow-50 p-3 rounded-lg border border-yellow-200 mb-4">
-                    <div className="text-yellow-700">⏳ Loading document...</div>
-                </div>
+            <div className="flex items-center justify-center h-64">
                 <LoadingSpinner />
             </div>
         );
@@ -64,12 +62,6 @@ function Document({id}:{id:string}) {
 
     return (
         <div className="max-w-6xl mx-auto p-4 space-y-4">
-            {/* Status indicator */}
-            <div className="bg-green-50 p-3 rounded-lg border border-green-200">
-                <div className="text-green-700 font-medium">✅ Document Loaded Successfully!</div>
-                <div className="text-green-600 text-sm">Document ID: {id} | Title: {data?.title || "Untitled"}</div>
-            </div>
-
             {/* Title */}
             <form onSubmit={updateTitle} className="flex space-x-2"> 
                 <Input 
@@ -83,32 +75,26 @@ function Document({id}:{id:string}) {
                 </Button>
             </form>
             
-            {/* Collaborative Editor with Error Boundary */}
+            {/* Collaborative Editor with Suspense */}
             <div className="border rounded-lg">
-                <ErrorBoundary>
-                    <React.Suspense fallback={
-                        <div className="p-4">
-                            <div className="text-sm text-gray-600 mb-4">Loading collaborative editor...</div>
-                            <textarea 
-                                placeholder="Loading real-time editor..."
-                                className="w-full h-96 p-4 border rounded resize-none"
-                                disabled
-                            />
-                        </div>
-                    }>
-                        <RoomProvider 
-                            id={id}
-                            initialPresence={{
-                                cursor: null,
-                                name: user?.firstName || user?.emailAddresses[0]?.emailAddress?.split('@')[0] || 'User',
-                                color: userColor,
-                            }}
-                            initialStorage={{ content: '' }}
-                        >
-                            <CollaborativeEditor roomId={id} />
-                        </RoomProvider>
-                    </React.Suspense>
-                </ErrorBoundary>
+                <React.Suspense fallback={
+                    <div className="p-4 h-96 flex items-center justify-center">
+                        <LoadingSpinner />
+                        <span className="ml-2">Loading collaborative editor...</span>
+                    </div>
+                }>
+                    <LazyRoomProvider 
+                        id={id}
+                        initialPresence={{
+                            cursor: null,
+                            name: user?.firstName || user?.emailAddresses[0]?.emailAddress?.split('@')[0] || 'User',
+                            color: userColor,
+                        }}
+                        initialStorage={{ content: '' }}
+                    >
+                        <LazyCollaborativeEditor roomId={id} />
+                    </LazyRoomProvider>
+                </React.Suspense>
             </div>
         </div>
     );
