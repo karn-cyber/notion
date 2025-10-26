@@ -359,7 +359,7 @@ function DocumentWithRealCollab({id}:{id:string}) {
                                                 </div>
                                                 <div>
                                                     <div className="font-semibold text-blue-700 dark:text-blue-300">
-                                                        ✨ Live Collaboration Active
+                                                        Live Collaboration Active
                                                     </div>
                                                     <div className="text-blue-600/80 dark:text-blue-400/80 text-sm">
                                                         Changes sync instantly across all tabs
