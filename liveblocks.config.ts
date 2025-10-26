@@ -19,6 +19,8 @@ declare global {
       content: string;
       // BlockNote blocks as JSON string
       blocks: string;
+      // Chat messages as JSON string
+      chatMessages: string;
     };
 
     // Custom user info set when authenticating with a secret key

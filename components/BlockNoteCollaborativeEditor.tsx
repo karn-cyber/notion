@@ -162,10 +162,7 @@ export default function BlockNoteCollaborativeEditor({
         }
         reader.readAsDataURL(file)
       })
-    },
-    // Optimized for real-time collaboration through Liveblocks
-    defaultStyles: true,
-    animations: true,
+    }
   })
 
   // Track active typers with proper user identification
@@ -196,6 +193,10 @@ export default function BlockNoteCollaborativeEditor({
   const handleContentChange = useCallback(async () => {
     if (!editor || isUpdatingRef.current) return
 
+    // Don't process changes if command menus are open
+    const hasActiveMenu = document.querySelector('.bn-suggestion-menu, .bn-formatting-toolbar, .bn-side-menu')
+    if (hasActiveMenu) return
+
     isUpdatingRef.current = true
 
     try {
@@ -216,44 +217,56 @@ export default function BlockNoteCollaborativeEditor({
         setLastSaved(new Date())
       }
 
-      // Update typing status immediately
-      updateMyPresence({
-        cursor: myPresence.cursor,
-        name: userName,
-        color: userColor,
-        isTyping: true,
-        lastSeen: Date.now()
-      })
-
-      // Clear typing status after a delay
-      setTimeout(() => {
+      // Update typing status immediately (but only if no menus are open)
+      if (!hasActiveMenu) {
         updateMyPresence({
           cursor: myPresence.cursor,
           name: userName,
           color: userColor,
-          isTyping: false,
+          isTyping: true,
           lastSeen: Date.now()
         })
-      }, 1500)
+
+        // Clear typing status after a delay
+        setTimeout(() => {
+          updateMyPresence({
+            cursor: myPresence.cursor,
+            name: userName,
+            color: userColor,
+            isTyping: false,
+            lastSeen: Date.now()
+          })
+        }, 1500)
+      }
     } finally {
       isUpdatingRef.current = false
     }
   }, [editor, updateBlocks, updateContent, onContentChange, updateMyPresence, myPresence.cursor, userName, userColor])
 
-  // Real-time document synchronization with immediate updates
+  // Real-time document synchronization with command menu awareness
   useEffect(() => {
     if (!editor) return
 
-    // Subscribe to document changes with immediate real-time sync
+    // Subscribe to document changes with command menu awareness
     const unsubscribe = editor.onChange(() => {
-      // Immediate update for real-time collaboration
-      handleContentChange()
+      // Don't process changes immediately if command menus are open
+      const hasActiveMenu = document.querySelector('.bn-suggestion-menu, .bn-formatting-toolbar, .bn-side-menu')
+      
+      if (hasActiveMenu) {
+        // Delay the update if menus are active
+        setTimeout(() => {
+          handleContentChange()
+        }, 500)
+      } else {
+        // Immediate update for normal typing
+        handleContentChange()
+      }
     })
 
     return unsubscribe
   }, [editor, handleContentChange])
 
-  // Enhanced keyboard event handling for instant typing feedback - SIMPLIFIED
+  // Simplified keyboard event handling for typing feedback
   useEffect(() => {
     if (!editor) return
 
@@ -268,10 +281,14 @@ export default function BlockNoteCollaborativeEditor({
       })
     }
 
-    // Use a simple timeout-based approach instead of direct event listeners
+    // Use a debounced approach that doesn't interfere with command menus
     let typingTimeout: NodeJS.Timeout
 
     const handleTyping = () => {
+      // Don't interfere if command menus are open
+      const hasActiveMenu = document.querySelector('.bn-suggestion-menu, .bn-formatting-toolbar, .bn-side-menu')
+      if (hasActiveMenu) return
+
       updateTypingStatus(true)
       clearTimeout(typingTimeout)
       typingTimeout = setTimeout(() => {
@@ -279,23 +296,13 @@ export default function BlockNoteCollaborativeEditor({
       }, 2000)
     }
 
-    // Simple observer for content changes instead of intrusive event listeners
-    const observer = new MutationObserver(() => {
+    // Listen to editor changes instead of DOM mutations
+    const unsubscribe = editor.onChange(() => {
       handleTyping()
     })
 
-    // Find the editor element and observe changes
-    const editorElement = document.querySelector('.ProseMirror')
-    if (editorElement) {
-      observer.observe(editorElement, {
-        childList: true,
-        subtree: true,
-        characterData: true
-      })
-    }
-
     return () => {
-      observer.disconnect()
+      unsubscribe()
       clearTimeout(typingTimeout)
     }
   }, [editor, updateMyPresence, myPresence.cursor, userName, userColor])
@@ -310,6 +317,92 @@ export default function BlockNoteCollaborativeEditor({
       lastSeen: Date.now()
     })
   }, [updateMyPresence, userName, userColor])
+
+  // Sync incoming changes from other users - CRITICAL for collaboration
+  useEffect(() => {
+    if (!editor || !storedBlocks || storedBlocks.length === 0 || isUpdatingRef.current) return
+
+    // Don't sync if user is actively interacting with command menus
+    const hasActiveMenu = document.querySelector('.bn-suggestion-menu, .bn-formatting-toolbar, .bn-side-menu')
+    if (hasActiveMenu) return
+
+    // Get current editor content
+    const currentBlocks = editor.document
+
+    // Check if the stored blocks are different from current content
+    const storedBlocksString = JSON.stringify(storedBlocks)
+    const currentBlocksString = JSON.stringify(currentBlocks)
+
+    if (storedBlocksString !== currentBlocksString) {
+      // Set flag to prevent infinite loops
+      isUpdatingRef.current = true
+      
+      try {
+        // Use a more gentle update approach to avoid breaking command menus
+        setTimeout(() => {
+          try {
+            // Replace editor content with incoming changes
+            editor.replaceBlocks(editor.document, storedBlocks)
+          } catch (error) {
+            console.warn('Failed to sync incoming changes:', error)
+          } finally {
+            // Reset flag after a short delay
+            setTimeout(() => {
+              isUpdatingRef.current = false
+            }, 300)
+          }
+        }, 100)
+      } catch (error) {
+        console.warn('Failed to schedule sync:', error)
+        isUpdatingRef.current = false
+      }
+    }
+  }, [editor, storedBlocks])
+
+  // Enhanced mouse tracking for live cursors
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      const editorContainer = document.querySelector('.ProseMirror')?.parentElement
+      if (!editorContainer) return
+
+      const rect = editorContainer.getBoundingClientRect()
+      const x = e.clientX - rect.left
+      const y = e.clientY - rect.top
+
+      // Only update if mouse is within editor bounds
+      if (x >= 0 && y >= 0 && x <= rect.width && y <= rect.height) {
+        updateMyPresence({
+          cursor: { x, y },
+          name: userName,
+          color: userColor,
+          isTyping: myPresence.isTyping,
+          lastSeen: Date.now()
+        })
+      }
+    }
+
+    const handleMouseLeave = () => {
+      updateMyPresence({
+        cursor: null,
+        name: userName,
+        color: userColor,
+        isTyping: myPresence.isTyping,
+        lastSeen: Date.now()
+      })
+    }
+
+    // Add event listeners to the editor container
+    const editorContainer = document.querySelector('.ProseMirror')?.parentElement
+    if (editorContainer) {
+      editorContainer.addEventListener('mousemove', handleMouseMove)
+      editorContainer.addEventListener('mouseleave', handleMouseLeave)
+      
+      return () => {
+        editorContainer.removeEventListener('mousemove', handleMouseMove)
+        editorContainer.removeEventListener('mouseleave', handleMouseLeave)
+      }
+    }
+  }, [updateMyPresence, userName, userColor, myPresence.isTyping])
 
   return (
     <div className="relative h-full">
@@ -428,17 +521,10 @@ export default function BlockNoteCollaborativeEditor({
             onChange={handleContentChange}
             theme="light"
             className="h-full min-h-[500px] w-full overflow-hidden"
-            style={{
-              // Ensure proper responsive behavior
-              maxWidth: '100%',
-              wordWrap: 'break-word',
-              overflowWrap: 'break-word',
-              lineHeight: '1.6'
-            }}
           />
         </div>
         
-        {/* Live Cursors - Simplified (optional, since cursor tracking is removed) */}
+        {/* Live Cursors - Enhanced positioning */}
         {others.map((other) => {
           if (!other.presence?.cursor) return null
           

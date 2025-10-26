@@ -24,7 +24,8 @@ function RoomProvider({roomId,children}:
     }}
     initialStorage={{
         content: "",
-        blocks: "[]"
+        blocks: "[]",
+        chatMessages: "[]"
     }}>
         <ClientSideSuspense
         fallback={<LoadingSpinner/>}>

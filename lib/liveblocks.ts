@@ -18,6 +18,7 @@ export type Presence = {
 export type Storage = {
   content: string;
   blocks: string;
+  chatMessages: string;
 };
 
 // Create room context with v2 API

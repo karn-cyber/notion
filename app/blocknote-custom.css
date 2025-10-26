@@ -24,12 +24,6 @@
   overflow-wrap: break-word !important;
 }
 
-/* Fix slash menu positioning on mobile */
-.bn-suggestion-menu {
-  z-index: 1000 !important;
-  max-width: calc(100vw - 20px) !important;
-}
-
 /* Responsive text input */
 .bn-editor [contenteditable="true"] {
   width: 100% !important;
