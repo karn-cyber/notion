@@ -4,14 +4,21 @@ declare global {
   interface Liveblocks {
     // Each user's Presence, for useMyPresence, useOthers, etc.
     Presence: {
-      // Example, real-time cursor coordinates
+      // Real-time cursor coordinates
       cursor: { x: number; y: number } | null;
+      // User information for collaboration
+      name?: string;
+      color?: string;
+      isTyping?: boolean;
+      lastSeen?: number;
     };
 
     // The Storage tree for the room, for useMutation, useStorage, etc.
     Storage: {
-      // Example, a conflict-free list
-      // animals: LiveList<string>;
+      // Document content as markdown
+      content: string;
+      // BlockNote blocks as JSON string
+      blocks: string;
     };
 
     // Custom user info set when authenticating with a secret key
@@ -19,7 +26,7 @@ declare global {
       id: string;
       info: {
         name: string;
-        email:string;
+        email: string;
         avatar: string;
       };
     };

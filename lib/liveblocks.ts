@@ -6,11 +6,10 @@ const client = createClient({
   authEndpoint: "/api/liveblocks-auth",
 });
 
-// Define types for presence and storage
+// Define types for presence and storage (matching liveblocks.config.ts)
 export type Presence = {
   cursor: { x: number; y: number } | null;
   name?: string;
-  avatar?: string;
   color?: string;
   isTyping?: boolean;
   lastSeen?: number;
@@ -18,6 +17,7 @@ export type Presence = {
 
 export type Storage = {
   content: string;
+  blocks: string;
 };
 
 // Create room context with v2 API

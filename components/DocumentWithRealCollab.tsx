@@ -8,7 +8,7 @@ import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/firebase';
 import { useDocumentData } from 'react-firebase-hooks/firestore';
 import LoadingSpinner from './ui/LoadingSpinner';
-import LiveCollaborativeEditor from './LiveCollaborativeEditor';
+import BlockNoteCollaborativeEditor from './BlockNoteCollaborativeEditor';
 import { ThemeToggle } from './ui/theme-toggle';
 import { UserAvatar, UserList } from './ui/user-avatar';
 import { StatusIndicator, CollaborationStatus, DocumentStatus } from './ui/status-indicators';
@@ -387,7 +387,7 @@ function DocumentWithRealCollab({id}:{id:string}) {
 
                                     {/* Collaborative Editor */}
                                     <div className="px-4 pb-4">
-                                        <LiveCollaborativeEditor 
+                                        <BlockNoteCollaborativeEditor 
                                             roomId={id}
                                             initialContent={data?.content || ''}
                                             onContentChange={updateContent}

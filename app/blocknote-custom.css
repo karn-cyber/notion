@@ -1,0 +1,73 @@
+/* BlockNote Custom Styles for Better Responsiveness */
+
+/* Fix mobile responsiveness and line wrapping */
+.bn-editor {
+  width: 100% !important;
+  max-width: 100% !important;
+  word-wrap: break-word !important;
+  overflow-wrap: break-word !important;
+}
+
+.bn-editor .ProseMirror {
+  width: 100% !important;
+  max-width: 100% !important;
+  word-wrap: break-word !important;
+  overflow-wrap: break-word !important;
+  white-space: pre-wrap !important;
+}
+
+/* Ensure blocks don't overflow on mobile */
+.bn-block-content {
+  width: 100% !important;
+  max-width: 100% !important;
+  word-wrap: break-word !important;
+  overflow-wrap: break-word !important;
+}
+
+/* Fix slash menu positioning on mobile */
+.bn-suggestion-menu {
+  z-index: 1000 !important;
+  max-width: calc(100vw - 20px) !important;
+}
+
+/* Responsive text input */
+.bn-editor [contenteditable="true"] {
+  width: 100% !important;
+  max-width: 100% !important;
+  word-wrap: break-word !important;
+  overflow-wrap: break-word !important;
+}
+
+/* Fix image blocks responsiveness */
+.bn-image-block {
+  max-width: 100% !important;
+  height: auto !important;
+}
+
+.bn-image-block img {
+  max-width: 100% !important;
+  height: auto !important;
+}
+
+/* Better mobile experience for toolbar */
+@media (max-width: 640px) {
+  .bn-formatting-toolbar {
+    max-width: calc(100vw - 20px) !important;
+    flex-wrap: wrap !important;
+  }
+  
+  .bn-formatting-toolbar-group {
+    margin: 2px !important;
+  }
+}
+
+/* Dark mode support */
+[data-theme="dark"] .bn-editor {
+  background-color: var(--background) !important;
+  color: var(--foreground) !important;
+}
+
+[data-theme="dark"] .bn-editor .ProseMirror {
+  background-color: var(--background) !important;
+  color: var(--foreground) !important;
+}
