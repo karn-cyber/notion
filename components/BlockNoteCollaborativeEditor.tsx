@@ -253,125 +253,52 @@ export default function BlockNoteCollaborativeEditor({
     return unsubscribe
   }, [editor, handleContentChange])
 
-  // Enhanced keyboard event handling for instant typing feedback
+  // Enhanced keyboard event handling for instant typing feedback - SIMPLIFIED
   useEffect(() => {
     if (!editor) return
 
-    const handleKeyDown = () => {
-      // Trigger immediate typing status for better real-time feedback
+    // Simple typing status updates without interfering with editor
+    const updateTypingStatus = (isTyping: boolean) => {
       updateMyPresence({
         cursor: myPresence.cursor,
         name: userName,
         color: userColor,
-        isTyping: true,
+        isTyping,
         lastSeen: Date.now()
       })
     }
 
-    const handleKeyUp = () => {
-      // Delayed typing status clear
-      setTimeout(() => {
-        updateMyPresence({
-          cursor: myPresence.cursor,
-          name: userName,
-          color: userColor,
-          isTyping: false,
-          lastSeen: Date.now()
-        })
-      }, 1000)
+    // Use a simple timeout-based approach instead of direct event listeners
+    let typingTimeout: NodeJS.Timeout
+
+    const handleTyping = () => {
+      updateTypingStatus(true)
+      clearTimeout(typingTimeout)
+      typingTimeout = setTimeout(() => {
+        updateTypingStatus(false)
+      }, 2000)
     }
 
-    // Add event listeners to the editor's DOM element
-    const editorElement = document.querySelector('[data-testid="blocknote-editor"]') || 
-                          document.querySelector('.ProseMirror') ||
-                          document.querySelector('[contenteditable="true"]')
-    
+    // Simple observer for content changes instead of intrusive event listeners
+    const observer = new MutationObserver(() => {
+      handleTyping()
+    })
+
+    // Find the editor element and observe changes
+    const editorElement = document.querySelector('.ProseMirror')
     if (editorElement) {
-      editorElement.addEventListener('keydown', handleKeyDown as EventListener)
-      editorElement.addEventListener('keyup', handleKeyUp as EventListener)
-      
-      return () => {
-        editorElement.removeEventListener('keydown', handleKeyDown as EventListener)
-        editorElement.removeEventListener('keyup', handleKeyUp as EventListener)
-      }
+      observer.observe(editorElement, {
+        childList: true,
+        subtree: true,
+        characterData: true
+      })
+    }
+
+    return () => {
+      observer.disconnect()
+      clearTimeout(typingTimeout)
     }
   }, [editor, updateMyPresence, myPresence.cursor, userName, userColor])
-
-  // Enhanced cursor tracking with immediate updates
-  const lastCursorUpdateRef = useRef(0)
-  const handleMouseMove = useCallback((event: React.MouseEvent) => {
-    const now = Date.now()
-    // More frequent cursor updates for smoother real-time experience
-    if (now - lastCursorUpdateRef.current < 16) return // ~60fps
-    
-    lastCursorUpdateRef.current = now
-    const rect = event.currentTarget.getBoundingClientRect()
-    const x = event.clientX - rect.left
-    const y = event.clientY - rect.top
-    
-    updateMyPresence({
-      cursor: { x, y },
-      name: userName,
-      color: userColor,
-      isTyping: myPresence.isTyping || false,
-      lastSeen: Date.now()
-    })
-  }, [updateMyPresence, userName, userColor, myPresence.isTyping])
-
-  // Handle cursor tracking on click
-  const handleEditorClick = useCallback((event: React.MouseEvent) => {
-    const rect = event.currentTarget.getBoundingClientRect()
-    const x = event.clientX - rect.left
-    const y = event.clientY - rect.top
-    
-    updateMyPresence({
-      cursor: { x, y },
-      name: userName,
-      color: userColor,
-      isTyping: false,
-      lastSeen: Date.now()
-    })
-  }, [updateMyPresence, userName, userColor])
-
-  const handleMouseLeave = useCallback(() => {
-    updateMyPresence({
-      cursor: null,
-      name: userName,
-      color: userColor,
-      isTyping: false,
-      lastSeen: Date.now()
-    })
-  }, [updateMyPresence, userName, userColor])
-
-  // Optimized remote sync for instant collaboration
-  const lastSyncRef = useRef(0)
-  useEffect(() => {
-    if (!editor || !storedBlocks || storedBlocks.length === 0 || isUpdatingRef.current) return
-
-    const now = Date.now()
-    // More frequent sync for better real-time experience
-    if (now - lastSyncRef.current < 100) return
-    lastSyncRef.current = now
-
-    const currentBlocks = editor.document
-    const currentBlocksJson = JSON.stringify(currentBlocks)
-    const storedBlocksJson = JSON.stringify(storedBlocks)
-    
-    // Only update if content actually changed
-    if (currentBlocksJson !== storedBlocksJson) {
-      try {
-        isUpdatingRef.current = true
-        editor.replaceBlocks(currentBlocks, storedBlocks)
-        console.log("📝 Real-time sync applied from remote changes")
-      } catch (error) {
-        console.log("Sync skipped - editor conflict", error)
-      } finally {
-        setTimeout(() => {
-          isUpdatingRef.current = false
-        }, 50) // Faster recovery time
-      }
-    }
-  }, [editor, storedBlocks])
 
   // Initialize presence with proper user identification
   useEffect(() => {
@@ -493,13 +420,8 @@ export default function BlockNoteCollaborativeEditor({
         </div>
       </div>
 
-      {/* BlockNote Editor */}
-      <div
-        className="relative h-full overflow-hidden bg-background"
-        onClick={handleEditorClick}
-        onMouseMove={handleMouseMove}
-        onMouseLeave={handleMouseLeave}
-      >
+      {/* BlockNote Editor - Clean without interference */}
+      <div className="relative h-full overflow-hidden bg-background">
         <div className="h-full w-full">
           <BlockNoteView
             editor={editor}
@@ -516,7 +438,7 @@ export default function BlockNoteCollaborativeEditor({
           />
         </div>
         
-        {/* Live Cursors with improved real-time positioning */}
+        {/* Live Cursors - Simplified (optional, since cursor tracking is removed) */}
         {others.map((other) => {
           if (!other.presence?.cursor) return null
           

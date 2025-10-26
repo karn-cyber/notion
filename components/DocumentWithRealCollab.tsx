@@ -10,18 +10,16 @@ import { useDocumentData } from 'react-firebase-hooks/firestore';
 import LoadingSpinner from './ui/LoadingSpinner';
 import BlockNoteCollaborativeEditor from './BlockNoteCollaborativeEditor';
 import { ThemeToggle } from './ui/theme-toggle';
-import { UserAvatar, UserList } from './ui/user-avatar';
+import { UserAvatar } from './ui/user-avatar';
 import { StatusIndicator, CollaborationStatus, DocumentStatus } from './ui/status-indicators';
 import { ShareDialog } from './ShareDialog';
 import { useUser } from '@clerk/nextjs';
 import { 
   FileText, 
   Users, 
-  Settings, 
   Share2, 
   Clock,
-  Globe,
-  Lock
+  Globe
 } from 'lucide-react';
 
 function DocumentWithRealCollab({id}:{id:string}) {
@@ -31,7 +29,16 @@ function DocumentWithRealCollab({id}:{id:string}) {
     const [autoSaveStatus, setAutoSaveStatus] = useState<'saved' | 'saving' | 'pending'>('saved');
     const [isCollabReady, setIsCollabReady] = useState(false);
     const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
-    const [collaborators, setCollaborators] = useState<any[]>([]);
+    const [collaborators, setCollaborators] = useState<Array<{
+        email: string;
+        role: 'owner' | 'editor' | 'viewer';
+        invitedAt: Date;
+        invitedBy: string;
+        status: 'pending' | 'accepted' | 'declined';
+        userId?: string;
+        name?: string;
+        avatar?: string;
+    }>>([]);
     const { user } = useUser();
     const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -395,7 +402,7 @@ function DocumentWithRealCollab({id}:{id:string}) {
                                         </div>
                                     </div>
 
-                                    {/* Collaborative Editor */}
+                                    {/* Collaborative Editor - Clean and Working */}
                                     <div className="px-4 pb-4">
                                         <BlockNoteCollaborativeEditor 
                                             initialContent={data?.content || ''}
