@@ -152,7 +152,7 @@ function DocumentWithRealCollab({id}:{id:string}) {
                                                     </div>
                                                     <div className="flex-1 min-w-0">
                                                         <div className="text-green-700 dark:text-green-300 font-semibold text-sm">
-                                                            {isCollabReady ? "✨ Live" : "🔄 Loading..."}
+                                                            {isCollabReady ? "Live" : "🔄 Loading..."}
                                                         </div>
                                                         <div className="text-green-600/80 dark:text-green-400/80 text-xs truncate">
                                                             {data?.title || "Untitled"}
@@ -186,7 +186,7 @@ function DocumentWithRealCollab({id}:{id:string}) {
                                                     </div>
                                                     <div>
                                                         <div className="text-green-700 dark:text-green-300 font-semibold">
-                                                            {isCollabReady ? "✨ Collaboration Active" : "🔄 Enabling Collaboration..."}
+                                                            {isCollabReady ?  "Collaboration Active" : " Enabling Collaboration..."}
                                                         </div>
                                                         <div className="text-green-600/80 dark:text-green-400/80 text-sm">
                                                             Document: {data?.title || "Untitled"} • ID: {id.slice(0, 8)}...
@@ -324,7 +324,7 @@ function DocumentWithRealCollab({id}:{id:string}) {
                                                     </div>
                                                     <div>
                                                         <div className="font-semibold text-blue-700 dark:text-blue-300 text-sm">
-                                                            ✨ Live
+                                                            Live
                                                         </div>
                                                     </div>
                                                 </div>

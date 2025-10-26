@@ -1,15 +1,14 @@
 "use client"
-import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useState, useRef } from 'react'
 import { useCreateBlockNote } from "@blocknote/react"
 import { BlockNoteView } from "@blocknote/mantine"
-import { BlockNoteEditor, PartialBlock } from "@blocknote/core"
+import { PartialBlock } from "@blocknote/core"
 import { Badge } from './ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar'
-import { cn } from '@/lib/utils'
+import { Loader2 } from 'lucide-react'
 import { 
   useOthers, 
   useMyPresence, 
-  useUpdateMyPresence,
   useMutation,
   useStorage
 } from '@liveblocks/react/suspense'
@@ -19,7 +18,6 @@ import "@blocknote/core/fonts/inter.css"
 import "@blocknote/mantine/style.css"
 
 interface BlockNoteCollaborativeEditorProps {
-  roomId: string
   initialContent: string
   onContentChange: (content: string) => void
   userName: string
@@ -36,44 +34,91 @@ const LiveCursor = ({ x, y, name, color, isTyping }: {
 }) => {
   return (
     <div
-      className="absolute z-50 pointer-events-none"
+      className="absolute z-50 pointer-events-none transition-all duration-75 ease-out"
       style={{
         left: x,
         top: y,
-        transform: 'translate(-50%, -100%)'
+        transform: 'translate(-2px, -2px)'
       }}
     >
-      {/* Cursor pointer */}
+      {/* Large Cursor pointer with shadow */}
+      <svg
+        width="32"
+        height="32"
+        viewBox="0 0 32 32"
+        fill="none"
+        className="relative drop-shadow-lg"
+      >
+        <path
+          d="M7.5 16.5H7.1L6.8 16.7L2 21V2L18 16.5H7.5Z"
+          fill={color}
+          stroke="white"
+          strokeWidth="2"
+        />
+        <path
+          d="M7.5 16.5H7.1L6.8 16.7L2 21V2L18 16.5H7.5Z"
+          fill={color}
+          opacity="0.8"
+        />
+      </svg>
+      
+      {/* Enhanced Name label with better styling */}
       <div 
-        className="w-0 h-0 border-l-2 border-r-2 border-b-4 border-transparent"
+        className="absolute top-8 left-4 px-3 py-2 text-sm font-semibold text-white rounded-lg shadow-xl whitespace-nowrap border-2 border-white/20 backdrop-blur-sm"
         style={{ 
-          borderBottomColor: color,
-          filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))'
+          backgroundColor: color,
+          boxShadow: `0 8px 32px ${color}40, 0 4px 16px rgba(0,0,0,0.3)`
+        }}
+      >
+        <div className="flex items-center gap-2">
+          <div 
+            className="w-2 h-2 rounded-full bg-white/80 animate-pulse"
+            style={{ animationDuration: isTyping ? '0.8s' : '2s' }}
+          />
+          {name}
+          {isTyping && (
+            <span className="ml-1 text-white/90 animate-bounce">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z" />
+              </svg>
+            </span>
+          )}
+        </div>
+      </div>
+      
+      {/* Animated glow ring */}
+      <div 
+        className="absolute -inset-2 rounded-full opacity-40 animate-ping"
+        style={{ 
+          backgroundColor: color,
+          filter: 'blur(8px)',
+          animationDuration: '2s'
         }}
       />
       
-      {/* Name label */}
+      {/* Subtle pulse ring for active state */}
       <div 
-        className="absolute top-1 left-2 px-2 py-1 text-xs font-medium text-white rounded shadow-lg whitespace-nowrap"
-        style={{ backgroundColor: color }}
-      >
-        {name}
-        {isTyping && (
-          <span className="ml-1 animate-pulse">✏️</span>
-        )}
-      </div>
-      
-      {/* Glow effect */}
-      <div 
-        className="absolute -inset-1 rounded-full opacity-30 animate-pulse"
-        style={{ backgroundColor: color, filter: 'blur(4px)' }}
+        className="absolute -inset-1 rounded-full opacity-20 animate-pulse"
+        style={{ 
+          backgroundColor: color,
+          filter: 'blur(4px)',
+          animationDuration: isTyping ? '0.5s' : '1.5s'
+        }}
       />
     </div>
   )
 }
 
+// Helper function to format time as HH:MM
+const formatTime = (date: Date): string => {
+  return date.toLocaleTimeString('en-US', { 
+    hour: '2-digit', 
+    minute: '2-digit',
+    hour12: false 
+  })
+}
+
 export default function BlockNoteCollaborativeEditor({
-  roomId,
   initialContent,
   onContentChange,
   userName,
@@ -81,7 +126,8 @@ export default function BlockNoteCollaborativeEditor({
 }: BlockNoteCollaborativeEditorProps) {
   const [myPresence, updateMyPresence] = useMyPresence()
   const others = useOthers()
-  const [isConnected, setIsConnected] = useState(false)
+  const [lastSaved, setLastSaved] = useState<Date | null>(null)
+  const [isInitializing, setIsInitializing] = useState(true)
 
   // Liveblocks mutations for collaborative content
   const updateContent = useMutation(({ storage }, newContent: string) => {
@@ -92,7 +138,6 @@ export default function BlockNoteCollaborativeEditor({
     storage.set('blocks', JSON.stringify(blocks))
   }, [])
 
-  const storedContent = useStorage((root) => root.content) || initialContent
   const storedBlocks = useStorage((root) => {
     try {
       return root.blocks ? JSON.parse(root.blocks as string) : []
@@ -103,7 +148,9 @@ export default function BlockNoteCollaborativeEditor({
 
   // Initialize BlockNote editor with collaborative features
   const editor = useCreateBlockNote({
-    initialContent: storedBlocks.length > 0 ? storedBlocks : undefined,
+    initialContent: storedBlocks.length > 0 ? storedBlocks : (
+      initialContent ? [{ type: "paragraph", content: initialContent }] : undefined
+    ),
     uploadFile: async (file: File) => {
       // Handle image uploads
       return new Promise((resolve) => {
@@ -129,48 +176,108 @@ export default function BlockNoteCollaborativeEditor({
       .filter(name => name !== 'Anonymous')
   }, [others])
 
-  // Connection status
+  // Calculate total users correctly (current user + others)
+  const totalUsers = useMemo(() => {
+    return 1 + others.length
+  }, [others])
+
+  // Connection status and initialization
   useEffect(() => {
-    const timer = setTimeout(() => setIsConnected(true), 1000)
-    return () => clearTimeout(timer)
+    const initTimer = setTimeout(() => {
+      setIsInitializing(false)
+    }, 1500)
+    return () => clearTimeout(initTimer)
   }, [])
 
-  // Handle content changes with proper debouncing and user tracking
+  // Stable real-time content synchronization
+  const lastUpdateRef = useRef(0)
+  const isUpdatingRef = useRef(false)
+  
   const handleContentChange = useCallback(async () => {
-    if (!editor) return
+    if (!editor || isUpdatingRef.current) return
 
-    const blocks = editor.document
-    
-    // Convert blocks to markdown for Firebase storage
-    const markdown = await editor.blocksToMarkdownLossy(blocks)
-    
-    // Update both Liveblocks and Firebase
-    updateBlocks(blocks)
-    updateContent(markdown)
-    onContentChange(markdown)
+    const now = Date.now()
+    // Reasonable throttle to prevent conflicts
+    if (now - lastUpdateRef.current < 300) return
+    lastUpdateRef.current = now
 
-    // Update typing status with proper user info
-    updateMyPresence({
-      cursor: myPresence.cursor,
-      name: userName,
-      color: userColor,
-      isTyping: true,
-      lastSeen: Date.now()
-    })
+    isUpdatingRef.current = true
 
-    // Clear typing status after a delay
-    setTimeout(() => {
+    try {
+      const blocks = editor.document
+      
+      // Convert blocks to markdown for Firebase storage
+      const markdown = await editor.blocksToMarkdownLossy(blocks)
+      
+      // Update both Liveblocks and Firebase
+      updateBlocks(blocks)
+      updateContent(markdown)
+      onContentChange(markdown)
+      
+      // Update last saved time
+      setLastSaved(new Date())
+
+      // Update typing status
       updateMyPresence({
         cursor: myPresence.cursor,
         name: userName,
         color: userColor,
-        isTyping: false,
+        isTyping: true,
         lastSeen: Date.now()
       })
-    }, 2000) // Increased delay for better UX
+
+      // Clear typing status after a delay
+      setTimeout(() => {
+        updateMyPresence({
+          cursor: myPresence.cursor,
+          name: userName,
+          color: userColor,
+          isTyping: false,
+          lastSeen: Date.now()
+        })
+      }, 1500)
+    } finally {
+      isUpdatingRef.current = false
+    }
   }, [editor, updateBlocks, updateContent, onContentChange, updateMyPresence, myPresence.cursor, userName, userColor])
 
-  // Handle cursor tracking
+  // Simple and stable document synchronization
+  useEffect(() => {
+    if (!editor) return
+
+    // Subscribe to document changes with proper debouncing
+    const unsubscribe = editor.onChange(() => {
+      // Use a simple timeout to avoid rapid-fire updates
+      setTimeout(() => {
+        handleContentChange()
+      }, 100)
+    })
+
+    return unsubscribe
+  }, [editor, handleContentChange])
+
+  // Simplified cursor tracking
+  const lastCursorUpdateRef = useRef(0)
+  const handleMouseMove = useCallback((event: React.MouseEvent) => {
+    const now = Date.now()
+    // Throttle cursor updates to 30fps for good performance
+    if (now - lastCursorUpdateRef.current < 33) return
+    
+    lastCursorUpdateRef.current = now
+    const rect = event.currentTarget.getBoundingClientRect()
+    const x = event.clientX - rect.left
+    const y = event.clientY - rect.top
+    
+    updateMyPresence({
+      cursor: { x, y },
+      name: userName,
+      color: userColor,
+      isTyping: myPresence.isTyping || false,
+      lastSeen: Date.now()
+    })
+  }, [updateMyPresence, userName, userColor, myPresence.isTyping])
+
+  // Handle cursor tracking on click
   const handleEditorClick = useCallback((event: React.MouseEvent) => {
     const rect = event.currentTarget.getBoundingClientRect()
     const x = event.clientX - rect.left
@@ -195,22 +302,29 @@ export default function BlockNoteCollaborativeEditor({
     })
   }, [updateMyPresence, userName, userColor])
 
-  // Sync remote changes to editor with better conflict resolution
+  // Safe remote sync that avoids conflicts
+  const lastSyncRef = useRef(0)
   useEffect(() => {
-    if (editor && storedBlocks && storedBlocks.length > 0) {
-      // Only update if blocks are significantly different to avoid loops
-      const currentBlocks = editor.document
-      const currentBlocksStr = JSON.stringify(currentBlocks)
-      const storedBlocksStr = JSON.stringify(storedBlocks)
-      
-      // Check if the content is actually different
-      if (currentBlocksStr !== storedBlocksStr && 
-          currentBlocks.length !== storedBlocks.length) {
-        try {
-          editor.replaceBlocks(editor.document, storedBlocks)
-        } catch (error) {
-          console.log("Block sync skipped - minor difference")
-        }
+    if (!editor || !storedBlocks || storedBlocks.length === 0 || isUpdatingRef.current) return
+
+    const now = Date.now()
+    // More conservative sync timing
+    if (now - lastSyncRef.current < 500) return
+    lastSyncRef.current = now
+
+    const currentBlocks = editor.document
+    
+    // Simple comparison to avoid unnecessary updates
+    if (currentBlocks.length !== storedBlocks.length) {
+      try {
+        isUpdatingRef.current = true
+        editor.replaceBlocks(currentBlocks, storedBlocks)
+      } catch {
+        console.log("Sync skipped - editor conflict")
+      } finally {
+        setTimeout(() => {
+          isUpdatingRef.current = false
+        }, 100)
       }
     }
   }, [editor, storedBlocks])
@@ -275,13 +389,13 @@ export default function BlockNoteCollaborativeEditor({
             {/* Status Text - Ultra-compact for small screens */}
             <div className="ml-1 sm:ml-2 min-w-0 flex-1">
               <p className="text-xs sm:text-sm font-medium text-foreground leading-none truncate">
-                {others.length + 1 > 0 ? (
+                {totalUsers > 0 ? (
                   <>
                     <span className="hidden sm:inline">
-                      {others.length + 1} collaborator{others.length + 1 !== 1 ? 's' : ''} online
+                      {totalUsers} collaborator{totalUsers !== 1 ? 's' : ''} online
                     </span>
                     <span className="sm:hidden">
-                      {others.length + 1}
+                      {totalUsers}
                     </span>
                   </>
                 ) : (
@@ -296,24 +410,40 @@ export default function BlockNoteCollaborativeEditor({
                   {activeTypers.join(', ')} {activeTypers.length === 1 ? 'is' : 'are'} typing...
                 </p>
               )}
+              {lastSaved && (
+                <p className="text-xs text-muted-foreground mt-0.5 leading-none truncate hidden sm:block">
+                  Last saved at {formatTime(lastSaved)}
+                </p>
+              )}
             </div>
           </div>
 
           {/* Action Buttons - Ultra-compact for small screens */}
           <div className="flex items-center gap-1 sm:gap-2 ml-1 sm:ml-2 shrink-0">
-            <Badge 
-              variant="secondary" 
-              className="text-xs px-1 sm:px-3 py-0.5 sm:py-1 bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400 border-green-200 dark:border-green-800"
-            >
-              <span className="hidden sm:inline">Live</span>
-              <span className="sm:hidden w-2 h-2 bg-green-500 rounded-full"></span>
-            </Badge>
+            {isInitializing ? (
+              <Badge 
+                variant="secondary" 
+                className="text-xs px-1 sm:px-3 py-0.5 sm:py-1 bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400 border-blue-200 dark:border-blue-800"
+              >
+                <Loader2 className="w-3 h-3 animate-spin mr-1" />
+                <span className="hidden sm:inline">Connecting...</span>
+                <span className="sm:hidden">•••</span>
+              </Badge>
+            ) : (
+              <Badge 
+                variant="secondary" 
+                className="text-xs px-1 sm:px-3 py-0.5 sm:py-1 bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400 border-green-200 dark:border-green-800"
+              >
+                <span className="hidden sm:inline">Live</span>
+                <span className="sm:hidden w-2 h-2 bg-green-500 rounded-full"></span>
+              </Badge>
+            )}
             <Badge 
               variant="outline" 
               className="text-xs px-1 sm:px-3 py-0.5 sm:py-1"
             >
-              <span className="hidden sm:inline">BlockNote</span>
-              <span className="sm:hidden text-blue-500">📝</span>
+              <span className="hidden sm:inline">Collaborative</span>
+              <span className="sm:hidden text-blue-500">🤝</span>
             </Badge>
           </div>
         </div>
@@ -323,6 +453,7 @@ export default function BlockNoteCollaborativeEditor({
       <div
         className="relative h-full overflow-hidden bg-background"
         onClick={handleEditorClick}
+        onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}
       >
         <div className="h-full w-full">
@@ -341,15 +472,15 @@ export default function BlockNoteCollaborativeEditor({
           />
         </div>
         
-        {/* Live Cursors with improved positioning */}
+        {/* Live Cursors with improved real-time positioning */}
         {others.map((other) => {
           if (!other.presence?.cursor) return null
           
           return (
             <LiveCursor
               key={other.connectionId}
-              x={Math.max(0, Math.min(other.presence.cursor.x, window.innerWidth - 100))}
-              y={Math.max(0, Math.min(other.presence.cursor.y, window.innerHeight - 100))}
+              x={other.presence.cursor.x}
+              y={other.presence.cursor.y}
               name={other.presence.name || other.info?.name || 'Anonymous'}
               color={other.presence.color || '#6366f1'}
               isTyping={other.presence.isTyping}
