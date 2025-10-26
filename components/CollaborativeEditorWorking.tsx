@@ -1,5 +1,18 @@
 "use client"
 import React, { useCallback, useRef, useEffect, useState } from 'react'
+import { Badge } from './ui/badge'
+import { Card, CardContent } from './ui/card'
+import { StatusIndicator } from './ui/status-indicators'
+import { UserAvatar } from './ui/user-avatar'
+import { cn } from '@/lib/utils'
+import { 
+  Mouse, 
+  Users, 
+  Wifi, 
+  Activity,
+  Eye,
+  MessageSquare
+} from 'lucide-react'
 
 interface CollaborativeEditorWorkingProps {
   roomId: string
@@ -9,26 +22,35 @@ interface CollaborativeEditorWorkingProps {
   userColor: string
 }
 
-// Working cursor component
-function WorkingCursor({ x, y, name, color }: { x: number; y: number; name: string; color: string }) {
+// Premium cursor component
+function PremiumCursor({ x, y, name, color }: { x: number; y: number; name: string; color: string }) {
   return (
     <div
-      className="pointer-events-none absolute z-50 transition-all duration-100 ease-out"
-      style={{ left: x - 10, top: y - 10 }}
+      className="pointer-events-none absolute z-50 transition-all duration-150 ease-out"
+      style={{ left: x - 12, top: y - 12 }}
     >
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-        <path
-          d="M5.65376 12.3673H5.46026L5.31717 12.4976L0.500002 16.8829L0.500002 1.19841L11.7841 12.3673H5.65376Z"
-          fill={color}
-          stroke="white"
-          strokeWidth="1"
-        />
-      </svg>
-      <div
-        className="absolute top-4 left-1 px-1.5 py-0.5 text-xs text-white rounded whitespace-nowrap"
-        style={{ backgroundColor: color }}
-      >
-        {name}
+      <div className="relative">
+        {/* Cursor SVG with enhanced styling */}
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="drop-shadow-lg">
+          <path
+            d="M5.65376 12.3673H5.46026L5.31717 12.4976L0.500002 16.8829L0.500002 1.19841L11.7841 12.3673H5.65376Z"
+            fill={color}
+            stroke="white"
+            strokeWidth="1.5"
+            className="filter drop-shadow-sm"
+          />
+        </svg>
+        
+        {/* User name badge with premium styling */}
+        <div
+          className="absolute top-5 left-2 px-2 py-1 text-xs text-white rounded-md whitespace-nowrap shadow-lg border border-white/20 backdrop-blur-sm"
+          style={{ backgroundColor: color }}
+        >
+          <div className="flex items-center space-x-1">
+            <div className="w-1.5 h-1.5 bg-white/80 rounded-full"></div>
+            <span className="font-medium">{name}</span>
+          </div>
+        </div>
       </div>
     </div>
   )
@@ -193,70 +215,135 @@ function CollaborativeEditorWorking({
   }, [roomId, sessionId, onContentChange])
 
   return (
-    <div className="space-y-3">
-      {/* Editor */}
-      <div 
-        ref={containerRef}
-        className="relative bg-white dark:bg-gray-900 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden transition-colors"
-        onPointerMove={handlePointerMove}
-        onPointerLeave={handlePointerLeave}
-      >
-        {/* Other users' cursors */}
-        {Array.from(otherCursors.entries()).map(([id, cursor]) => (
-          <WorkingCursor
-            key={id}
-            x={cursor.x}
-            y={cursor.y}
-            name={cursor.name}
-            color={cursor.color}
+    <div className="space-y-4">
+      {/* Premium Editor Card */}
+      <Card className="shadow-lg border-2 border-border/50 hover:border-primary/20 transition-all duration-300 overflow-hidden">
+        <div 
+          ref={containerRef}
+          className="relative bg-linear-to-br from-card via-card to-card/80 transition-colors group"
+          onPointerMove={handlePointerMove}
+          onPointerLeave={handlePointerLeave}
+        >
+          {/* Other users' cursors */}
+          {Array.from(otherCursors.entries()).map(([id, cursor]) => (
+            <PremiumCursor
+              key={id}
+              x={cursor.x}
+              y={cursor.y}
+              name={cursor.name}
+              color={cursor.color}
+            />
+          ))}
+
+          {/* My cursor preview */}
+          {myPresence && (
+            <PremiumCursor
+              x={myPresence.x}
+              y={myPresence.y}
+              name={`${userName} (You)`}
+              color={userColor}
+            />
+          )}
+
+          <textarea
+            value={content}
+            onChange={handleTextChange}
+            placeholder="✨ Start writing your ideas... This document supports real-time collaboration across tabs!"
+            className={cn(
+              "w-full h-96 p-8 border-none outline-none resize-none",
+              "text-foreground placeholder-muted-foreground/70 text-base leading-relaxed bg-transparent",
+              "font-sans transition-all duration-200",
+              "focus:placeholder-muted-foreground/50",
+              "selection:bg-primary/20"
+            )}
+            style={{
+              lineHeight: '1.7',
+              wordWrap: 'break-word',
+              whiteSpace: 'pre-wrap',
+              overflowWrap: 'break-word',
+              fontFamily: 'system-ui, -apple-system, "Segoe UI", sans-serif'
+            }}
+            spellCheck={true}
+            autoComplete="off"
+            autoCorrect="on"
+            autoCapitalize="sentences"
           />
-        ))}
-
-        {/* My cursor preview */}
-        {myPresence && (
-          <WorkingCursor
-            x={myPresence.x}
-            y={myPresence.y}
-            name={`${userName} (You)`}
-            color={userColor}
-          />
-        )}
-
-        <textarea
-          value={content}
-          onChange={handleTextChange}
-          placeholder="Start writing, you can also share this doc and collaborate in real-time!"
-          className="w-full h-96 p-6 border-none outline-none resize-none text-gray-800 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-500 text-base leading-relaxed bg-transparent font-sans"
-          style={{
-            lineHeight: '1.6',
-            wordWrap: 'break-word',
-            whiteSpace: 'pre-wrap',
-            overflowWrap: 'break-word',
-            fontFamily: 'system-ui, -apple-system, sans-serif'
-          }}
-          spellCheck={true}
-          autoComplete="off"
-          autoCorrect="on"
-          autoCapitalize="sentences"
-        />
-      </div>
-
-      <div className="text-center text-xs text-gray-400 dark:text-gray-500">
-        Cross-tab collaboration • Room: {roomId} • {otherCursors.size + 1} users connected
-      </div>
-      
-      {/* Debug info */}
-      <details className="text-xs text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800 p-2 rounded transition-colors">
-        <summary className="cursor-pointer">Debug Info (click to expand)</summary>
-        <div className="mt-2 space-y-1">
-          <div>Connection: {isConnected ? '✅ Connected' : '❌ Disconnected'}</div>
-          <div>Session ID: {sessionId}</div>
-          <div>Other cursors: {otherCursors.size}</div>
-          <div>Room ID: {roomId}</div>
-          <div>Content length: {content.length}</div>
-          <div>My presence: {myPresence ? `${myPresence.x}, ${myPresence.y}` : 'None'}</div>
-          <div>Storage key: collab-{roomId}</div>
         </div>
+      </Card>
+
+      {/* Status Bar */}
+      <Card className="bg-muted/30 border-border/50">
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <StatusIndicator 
+                status={isConnected ? 'connected' : 'disconnected'} 
+                text={isConnected ? 'Live sync active' : 'Connecting...'}
+                size="sm"
+              />
+              
+              <Badge variant="outline" className="flex items-center space-x-1.5">
+                <Users size={12} />
+                <span className="text-sm font-medium">
+                  {otherCursors.size + 1} participant{otherCursors.size !== 0 ? 's' : ''}
+                </span>
+              </Badge>
+              
+              <Badge variant="secondary" className="flex items-center space-x-1.5">
+                <Activity size={12} />
+                <span className="text-sm">Room: {roomId.slice(0, 8)}...</span>
+              </Badge>
+            </div>
+            
+            <div className="flex items-center space-x-3 text-xs text-muted-foreground">
+              <div className="flex items-center space-x-1">
+                <Eye size={12} />
+                <span>{content.length} characters</span>
+              </div>
+              {myPresence && (
+                <div className="flex items-center space-x-1">
+                  <Mouse size={12} />
+                  <span>({myPresence.x}, {myPresence.y})</span>
+                </div>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+      
+      {/* Debug Panel - Premium Collapsible */}
+      <details className="group">
+        <summary className="cursor-pointer p-3 bg-muted/50 hover:bg-muted/80 rounded-lg border border-border/50 transition-colors">
+          <div className="flex items-center space-x-2">
+            <div className="w-2 h-2 bg-primary rounded-full animate-pulse"></div>
+            <span className="text-sm font-medium">Development Tools</span>
+            <Badge variant="outline" className="ml-auto text-xs">Debug</Badge>
+          </div>
+        </summary>
+        
+        <Card className="mt-2 bg-muted/30">
+          <CardContent className="p-4">
+            <div className="grid grid-cols-2 gap-4 text-xs">
+              <div className="space-y-2">
+                <div className="font-medium text-foreground">Connection Status</div>
+                <div className="space-y-1 text-muted-foreground">
+                  <div>Status: {isConnected ? '✅ Connected' : '❌ Disconnected'}</div>
+                  <div>Session ID: {sessionId}</div>
+                  <div>Storage Key: collab-{roomId}</div>
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <div className="font-medium text-foreground">Activity Metrics</div>
+                <div className="space-y-1 text-muted-foreground">
+                  <div>Active Cursors: {otherCursors.size}</div>
+                  <div>Content Length: {content.length}</div>
+                  <div>My Position: {myPresence ? `${myPresence.x}, ${myPresence.y}` : 'None'}</div>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </details>
     </div>
   )

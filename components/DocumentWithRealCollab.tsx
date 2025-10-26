@@ -2,13 +2,26 @@
 import React, { FormEvent, useState, useTransition, useEffect, useRef, useCallback } from 'react'
 import { Input } from './ui/input';
 import { Button } from './ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+import { Badge } from './ui/badge';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/firebase';
 import { useDocumentData } from 'react-firebase-hooks/firestore';
 import LoadingSpinner from './ui/LoadingSpinner';
 import CollaborativeEditorWorking from './CollaborativeEditorWorking';
 import { ThemeToggle } from './ui/theme-toggle';
+import { UserAvatar, UserList } from './ui/user-avatar';
+import { StatusIndicator, CollaborationStatus, DocumentStatus } from './ui/status-indicators';
 import { useUser } from '@clerk/nextjs';
+import { 
+  FileText, 
+  Users, 
+  Settings, 
+  Share2, 
+  Clock,
+  Globe,
+  Lock
+} from 'lucide-react';
 
 function DocumentWithRealCollab({id}:{id:string}) {
     const [data, loading, error] = useDocumentData(doc(db,"documents",id));
@@ -104,123 +117,200 @@ function DocumentWithRealCollab({id}:{id:string}) {
     }
 
     return (
-        <div className="min-h-screen bg-background transition-colors">
-            <div className="max-w-6xl mx-auto p-4 space-y-4">
-                {/* Header with theme toggle */}
-                <div className="flex justify-between items-center">
-                    <div className="flex-1">
-                        {/* Loading indicator */}
-                        {loading && (
-                            <div className="bg-blue-50 dark:bg-blue-950 p-3 rounded-lg border border-blue-200 dark:border-blue-800 flex items-center space-x-2">
-                                <LoadingSpinner size={16} />
-                                <span className="text-blue-700 dark:text-blue-300 text-sm">Loading document...</span>
-                            </div>
-                        )}
-
-                        {/* Document loaded indicator */}
-                        {!loading && data && (
-                            <div className="bg-green-50 dark:bg-green-950 p-3 rounded-lg border border-green-200 dark:border-green-800 flex items-center justify-between">
-                                <div>
-                                    <div className="text-green-700 dark:text-green-300 font-medium">
-                                        {isCollabReady ? "Real-Time Collaboration Active!" : "Document Loaded - Enabling Collaboration..."}
+        <div className="min-h-screen bg-linear-to-br from-background via-background to-muted/30 transition-colors">
+            <div className="max-w-6xl mx-auto p-4 space-y-6">
+                {/* Header */}
+                <Card className="border-none shadow-lg bg-linear-to-r from-card to-card/80 backdrop-blur-sm">
+                    <CardHeader className="pb-4">
+                        <div className="flex justify-between items-start">
+                            <div className="flex-1 space-y-3">
+                                {/* Loading State */}
+                                {loading && (
+                                    <div className="flex items-center space-x-3 p-4 bg-blue-50/80 dark:bg-blue-950/50 rounded-lg border border-blue-200/50 dark:border-blue-800/50">
+                                        <LoadingSpinner variant="icon" size={20} className="text-blue-600" />
+                                        <div>
+                                            <div className="text-blue-700 dark:text-blue-300 font-medium">Loading document...</div>
+                                            <div className="text-blue-600/70 dark:text-blue-400/70 text-sm">Preparing collaborative workspace</div>
+                                        </div>
                                     </div>
-                                    <div className="text-green-600 dark:text-green-400 text-sm">Document ID: {id} | Title: {data?.title || "Untitled"}</div>
-                                </div>
-                                <div className="text-xs text-muted-foreground flex items-center space-x-2">
-                                    {!isCollabReady && <LoadingSpinner size={12} />}
-                                    {autoSaveStatus === 'saving' && (
-                                        <span className="flex items-center space-x-1">
-                                            <LoadingSpinner size={12} />
-                                            <span>Saving...</span>
-                                        </span>
-                                    )}
-                                    {autoSaveStatus === 'saved' && '✅ Saved'}
-                                    {autoSaveStatus === 'pending' && '📝 Pending...'}
-                                </div>
+                                )}
+
+                                {/* Document Status */}
+                                {!loading && data && (
+                                    <div className="space-y-3">
+                                        <div className="flex items-center justify-between p-4 bg-linear-to-r from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30 rounded-lg border border-green-200/50 dark:border-green-800/30">
+                                            <div className="flex items-center space-x-3">
+                                                <div className="p-2 bg-green-100 dark:bg-green-900/50 rounded-full">
+                                                    <FileText size={20} className="text-green-600 dark:text-green-400" />
+                                                </div>
+                                                <div>
+                                                    <div className="text-green-700 dark:text-green-300 font-semibold">
+                                                        {isCollabReady ? "✨ Collaboration Active" : "🔄 Enabling Collaboration..."}
+                                                    </div>
+                                                    <div className="text-green-600/80 dark:text-green-400/80 text-sm">
+                                                        Document: {data?.title || "Untitled"} • ID: {id.slice(0, 8)}...
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <div className="flex items-center space-x-3">
+                                                <DocumentStatus 
+                                                    autoSaveStatus={autoSaveStatus}
+                                                    lastModified={autoSaveStatus === 'saved' ? new Date() : undefined}
+                                                />
+                                                {!isCollabReady && <LoadingSpinner variant="icon" size={16} />}
+                                            </div>
+                                        </div>
+
+                                        {/* Collaboration Status */}
+                                        {isCollabReady && (
+                                            <CollaborationStatus 
+                                                isActive={isCollabReady}
+                                                userCount={1}
+                                                roomId={id}
+                                            />
+                                        )}
+                                    </div>
+                                )}
                             </div>
-                        )}
-                    </div>
+                            
+                            {/* Theme Toggle */}
+                            <div className="ml-6">
+                                <ThemeToggle />
+                            </div>
+                        </div>
+                    </CardHeader>
+                </Card>
+
+                {/* Document Title Section */}
+                <Card className="shadow-md hover:shadow-lg transition-shadow">
+                    <CardHeader className="pb-3">
+                        <CardTitle className="flex items-center space-x-2">
+                            <FileText size={24} className="text-primary" />
+                            <span className="text-2xl font-bold text-foreground">
+                                {data?.title || "Untitled Document"}
+                            </span>
+                        </CardTitle>
+                        <div className="flex items-center space-x-4 text-sm text-muted-foreground">
+                            <div className="flex items-center space-x-1">
+                                <Clock size={14} />
+                                <span>Last modified: {data?.createdAt?.toDate().toLocaleDateString() || "Unknown"}</span>
+                            </div>
+                            <Badge variant="outline" className="flex items-center space-x-1">
+                                <Globe size={12} />
+                                <span>Public</span>
+                            </Badge>
+                        </div>
+                    </CardHeader>
                     
-                    {/* Theme toggle */}
-                    <div className="ml-4">
-                        <ThemeToggle />
-                    </div>
-                </div>
-
-                {/* Title */}
-                <div className="border-b border-border pb-4">
-                    <h1 className="text-3xl font-bold text-foreground mb-2">
-                        {data?.title || "Untitled Document"}
-                    </h1>
-                    <p className="text-muted-foreground text-sm">
-                        Last modified: {data?.createdAt?.toDate().toLocaleDateString() || "Unknown"}
-                    </p>
-                </div>
-
-                {/* Document Title Update Form */}
-                <form className="flex space-x-2" onSubmit={updateTitle}>
-                    <Input 
-                        value={input}
-                        onChange={(e) => setInput(e.target.value)}
-                        placeholder="Enter new title..."
-                        disabled={loading}
-                    />
-                    <Button disabled={isUpdating || loading} type="submit">
-                        {isUpdating ? "Updating..." : "Update"}
-                    </Button>
-                </form>
+                    <CardContent>
+                        <form className="flex space-x-3" onSubmit={updateTitle}>
+                            <Input 
+                                value={input}
+                                onChange={(e) => setInput(e.target.value)}
+                                placeholder="Enter new title..."
+                                disabled={loading}
+                                className="flex-1"
+                            />
+                            <Button 
+                                disabled={isUpdating || loading} 
+                                type="submit"
+                                className="min-w-[100px]"
+                            >
+                                {isUpdating ? (
+                                    <div className="flex items-center space-x-2">
+                                        <LoadingSpinner variant="icon" size={16} />
+                                        <span>Updating...</span>
+                                    </div>
+                                ) : (
+                                    "Update"
+                                )}
+                            </Button>
+                        </form>
+                    </CardContent>
+                </Card>
                 
                 {/* Editor Section */}
                 {!loading && data && (
-                    <div className="space-y-3">
+                    <Card className="shadow-lg border-2 border-border/50 hover:border-border transition-colors">
                         {!isCollabReady ? (
-                            // Simple editor while waiting for collaboration to initialize
-                            <div className="space-y-3">
-                                <div className="flex items-center justify-between p-3 bg-muted border border-border rounded-lg">
-                                    <span className="text-sm font-medium flex items-center space-x-2">
-                                        <LoadingSpinner size={16} />
-                                        <span>Initializing collaboration...</span>
-                                    </span>
-                                </div>
-
-                                <div className="bg-card rounded-lg shadow-sm border border-border overflow-hidden">
-                                    <textarea
-                                        value={data?.content || ""}
-                                        readOnly
-                                        placeholder="Loading collaborative features..."
-                                        className="w-full h-96 p-6 border-none outline-none resize-none text-foreground placeholder-muted-foreground text-base bg-muted/30"
-                                    />
-                                </div>
-                            </div>
-                        ) : (
-                            // Simple collaborative editor that actually works
-                            <div className="space-y-3">
-                                <div className="flex items-center justify-between p-3 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg">
-                                    <div className="flex items-center space-x-2">
-                                        <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                                        <span className="text-sm font-medium text-blue-700 dark:text-blue-300">Real-time collaboration active!</span>
-                                    </div>
-                                    <div className="flex -space-x-1">
-                                        <div 
-                                            className="w-7 h-7 rounded-full border-2 border-white flex items-center justify-center text-white text-xs font-medium"
-                                            style={{ backgroundColor: userColor }}
-                                            title={`${user?.firstName || 'You'} (You)`}
-                                        >
-                                            {(user?.firstName || 'Y').charAt(0).toUpperCase()}
+                            <CardContent className="p-6">
+                                <div className="space-y-4">
+                                    <div className="flex items-center justify-center p-6 bg-muted/50 border-2 border-dashed border-border rounded-xl">
+                                        <div className="text-center space-y-3">
+                                            <LoadingSpinner variant="icon" size={32} className="mx-auto text-primary" />
+                                            <div>
+                                                <div className="font-semibold text-lg">Initializing Collaboration</div>
+                                                <div className="text-muted-foreground">Setting up real-time features...</div>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
 
-                                <CollaborativeEditorWorking 
-                                    roomId={id}
-                                    initialContent={data?.content || ''}
-                                    onContentChange={updateContent}
-                                    userName={user?.firstName || user?.emailAddresses[0]?.emailAddress?.split('@')[0] || 'User'}
-                                    userColor={userColor}
-                                />
-                            </div>
+                                    <div className="bg-card rounded-xl shadow-sm border border-border overflow-hidden">
+                                        <div className="p-4 bg-muted/30 border-b border-border">
+                                            <StatusIndicator status="loading" text="Loading collaborative features..." />
+                                        </div>
+                                        <textarea
+                                            value={data?.content || ""}
+                                            readOnly
+                                            placeholder="Preparing collaborative workspace..."
+                                            className="w-full h-80 p-6 border-none outline-none resize-none text-foreground placeholder-muted-foreground text-base bg-transparent"
+                                        />
+                                    </div>
+                                </div>
+                            </CardContent>
+                        ) : (
+                            <CardContent className="p-0">
+                                <div className="space-y-4">
+                                    {/* Collaboration Header */}
+                                    <div className="p-4 bg-linear-to-r from-blue-50/80 to-indigo-50/80 dark:from-blue-950/30 dark:to-indigo-950/30 border-b border-border">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center space-x-3">
+                                                <div className="p-2 bg-blue-100 dark:bg-blue-900/50 rounded-full">
+                                                    <Users size={20} className="text-blue-600 dark:text-blue-400" />
+                                                </div>
+                                                <div>
+                                                    <div className="font-semibold text-blue-700 dark:text-blue-300">
+                                                        ✨ Live Collaboration Active
+                                                    </div>
+                                                    <div className="text-blue-600/80 dark:text-blue-400/80 text-sm">
+                                                        Changes sync instantly across all tabs
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <div className="flex items-center space-x-3">
+                                                <UserAvatar
+                                                    name={user?.firstName || user?.emailAddresses[0]?.emailAddress?.split('@')[0] || 'User'}
+                                                    color={userColor}
+                                                    size="md"
+                                                    showName={true}
+                                                    isCurrentUser={true}
+                                                    showStatus={true}
+                                                    status="online"
+                                                />
+                                                <Badge variant="success" className="flex items-center space-x-1">
+                                                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                                                    <span>Online</span>
+                                                </Badge>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Collaborative Editor */}
+                                    <div className="px-4 pb-4">
+                                        <CollaborativeEditorWorking 
+                                            roomId={id}
+                                            initialContent={data?.content || ''}
+                                            onContentChange={updateContent}
+                                            userName={user?.firstName || user?.emailAddresses[0]?.emailAddress?.split('@')[0] || 'User'}
+                                            userColor={userColor}
+                                        />
+                                    </div>
+                                </div>
+                            </CardContent>
                         )}
-                    </div>
+                    </Card>
                 )}
             </div>
         </div>
