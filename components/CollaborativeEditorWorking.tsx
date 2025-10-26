@@ -248,7 +248,7 @@ function CollaborativeEditorWorking({
           <textarea
             value={content}
             onChange={handleTextChange}
-            placeholder="✨ Start writing your ideas... This document supports real-time collaboration across tabs!"
+            placeholder="Start writing your ideas... This document supports real-time collaboration across tabs!"
             className={cn(
               "w-full h-96 p-8 border-none outline-none resize-none",
               "text-foreground placeholder-muted-foreground/70 text-base leading-relaxed bg-transparent",

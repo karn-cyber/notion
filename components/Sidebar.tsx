@@ -2,6 +2,7 @@
 import React, { useEffect } from 'react';
 import NewDocumentButton from './NewDocumentButton';
 import {useCollection} from "react-firebase-hooks/firestore";
+import { SharedDocumentsSidebar } from './SharedDocumentsSidebar';
 
 import {
   Sheet,
@@ -71,27 +72,28 @@ function Sidebar() {
     },[data])
 
     const menuOptions = (
-        <>
+        <div className="space-y-6">
             <NewDocumentButton/>
 
             {/* My Documents */}
-            <div className='mt-5'>
-                <h2 className='font-bold mb-3'>Documents</h2>
+            <div className='space-y-3'>
+                <h2 className='font-bold text-lg'>My Documents</h2>
                 {groupedData.owner.length === 0 ? (
-                    <p className='text-sm text-gray-500'>No Documents Found</p>
+                    <p className='text-sm text-gray-500 p-3 bg-gray-50 rounded-lg'>No Documents Found</p>
                 ) : (
-                    <>
-                        <h3 className='mb-2 font-semibold text-sm'>My Documents</h3>
+                    <div className="space-y-2">
                         {groupedData.owner.map((doc) => (
-                            <SidebarOption key={doc.id} id={doc.id} href={`/doc/${doc.id}`} />
+                            doc.id ? (
+                                <SidebarOption key={doc.id} id={doc.id} href={`/doc/${doc.id}`} />
+                            ) : null
                         ))}
-                    </>
+                    </div>
                 )}
 
-                {/* Shared With Me */}
+                {/* Legacy Shared Documents */}
                 {groupedData.editor.length > 0 && (
                     <>
-                        <h3 className='mt-4 mb-2 font-semibold text-sm'>Shared With Me</h3>
+                        <h3 className='mt-4 mb-2 font-semibold text-sm'>Legacy Shared</h3>
                         {groupedData.editor.map((doc) => (
                             <p key={doc.id} className="text-sm text-gray-700 hover:bg-gray-100 p-2 rounded cursor-pointer">
                                 {doc.id}
@@ -100,26 +102,31 @@ function Sidebar() {
                     </>
                 )}
             </div>
-        </> 
+
+            {/* New Shared Documents Section */}
+            <div className="border-t pt-4">
+                <SharedDocumentsSidebar />
+            </div>
+        </div> 
     )
   return (
-    <div className='p-2 md:p-5 bg-gray-200 relative'>
+    <div className='p-2 md:p-5 bg-background border-r border-border relative min-h-screen'>
         <div className='md:hidden'>
         <Sheet>
             <SheetTrigger>
                 <MenuIcon className="p-2 hover:opacity-30 rounded-lg" size={40}/>
             </SheetTrigger>
-            <SheetContent side='left'>
+            <SheetContent side='left' className="w-80">
                 <SheetHeader>
                 <SheetTitle>Menu</SheetTitle>
-                <div>
+                <div className="mt-4 overflow-y-auto max-h-[80vh]">
                     {menuOptions}
                 </div>
                 </SheetHeader>
             </SheetContent>
         </Sheet>
         </div>
-            <div className="hidden md:inline">
+            <div className="hidden md:block max-w-xs">
             {menuOptions}
             </div>
     </div>

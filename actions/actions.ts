@@ -23,6 +23,9 @@ export async function createNewDocument(){
         updatedAt: new Date(),
         userId: userId,
         userEmail: userEmail,
+        collaborators: [], // Initialize empty collaborators array
+        isPublic: false, // Initialize sharing settings
+        shareLink: null
     });
 
     // Create user-document relationship

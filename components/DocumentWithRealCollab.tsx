@@ -12,6 +12,7 @@ import CollaborativeEditorWorking from './CollaborativeEditorWorking';
 import { ThemeToggle } from './ui/theme-toggle';
 import { UserAvatar, UserList } from './ui/user-avatar';
 import { StatusIndicator, CollaborationStatus, DocumentStatus } from './ui/status-indicators';
+import { ShareDialog } from './ShareDialog';
 import { useUser } from '@clerk/nextjs';
 import { 
   FileText, 
@@ -29,6 +30,8 @@ function DocumentWithRealCollab({id}:{id:string}) {
     const [isUpdating, startTransition] = useTransition();
     const [autoSaveStatus, setAutoSaveStatus] = useState<'saved' | 'saving' | 'pending'>('saved');
     const [isCollabReady, setIsCollabReady] = useState(false);
+    const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
+    const [collaborators, setCollaborators] = useState<any[]>([]);
     const { user } = useUser();
     const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -49,6 +52,8 @@ function DocumentWithRealCollab({id}:{id:string}) {
             const timer = setTimeout(() => {
                 console.log("🔍 Enabling collaboration for document:", id);
                 setIsCollabReady(true);
+                // Set collaborators from document data
+                setCollaborators(data?.collaborators || []);
             }, 1000); // Small delay to ensure everything is loaded
             
             return () => clearTimeout(timer);
@@ -158,6 +163,17 @@ function DocumentWithRealCollab({id}:{id:string}) {
                                                     autoSaveStatus={autoSaveStatus}
                                                     lastModified={autoSaveStatus === 'saved' ? new Date() : undefined}
                                                 />
+                                                
+                                                <Button
+                                                    onClick={() => setIsShareDialogOpen(true)}
+                                                    variant="outline"
+                                                    size="sm"
+                                                    className="flex items-center space-x-2"
+                                                >
+                                                    <Share2 size={16} />
+                                                    <span>Share</span>
+                                                </Button>
+                                                
                                                 {!isCollabReady && <LoadingSpinner variant="icon" size={16} />}
                                             </div>
                                         </div>
@@ -313,6 +329,16 @@ function DocumentWithRealCollab({id}:{id:string}) {
                     </Card>
                 )}
             </div>
+            
+            {/* Share Dialog */}
+            <ShareDialog
+                isOpen={isShareDialogOpen}
+                onClose={() => setIsShareDialogOpen(false)}
+                documentId={id}
+                documentTitle={data?.title || "Untitled Document"}
+                currentCollaborators={collaborators}
+                onCollaboratorsUpdate={setCollaborators}
+            />
         </div>
     );
 }
