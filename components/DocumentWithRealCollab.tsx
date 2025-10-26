@@ -127,8 +127,8 @@ function DocumentWithRealCollab({id}:{id:string}) {
                 {/* Header */}
                 <Card className="border-none shadow-lg bg-linear-to-r from-card to-card/80 backdrop-blur-sm">
                     <CardHeader className="pb-4">
-                        <div className="flex justify-between items-start">
-                            <div className="flex-1 space-y-3">
+                        <div className="flex items-start justify-between gap-3 sm:gap-4 min-w-0 min-h-0">
+                            <div className="flex-1 space-y-3 min-w-0 overflow-hidden">
                                 {/* Loading State */}
                                 {loading && (
                                     <div className="flex items-center space-x-3 p-4 bg-blue-50/80 dark:bg-blue-950/50 rounded-lg border border-blue-200/50 dark:border-blue-800/50">
@@ -145,13 +145,13 @@ function DocumentWithRealCollab({id}:{id:string}) {
                                     <div className="space-y-3">
                                         <div className="p-3 sm:p-4 bg-linear-to-r from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30 rounded-lg border border-green-200/50 dark:border-green-800/30">
                                             {/* Mobile Layout (stacked) */}
-                                            <div className="block sm:hidden space-y-3">
-                                                <div className="flex items-center space-x-3">
-                                                    <div className="p-2 bg-green-100 dark:bg-green-900/50 rounded-full">
+                                            <div className="block sm:hidden space-y-4">
+                                                <div className="flex items-center gap-3 min-w-0">
+                                                    <div className="p-2 bg-green-100 dark:bg-green-900/50 rounded-full shrink-0">
                                                         <FileText size={18} className="text-green-600 dark:text-green-400" />
                                                     </div>
-                                                    <div className="flex-1 min-w-0">
-                                                        <div className="text-green-700 dark:text-green-300 font-semibold text-sm">
+                                                    <div className="flex-1 min-w-0 overflow-hidden">
+                                                        <div className="text-green-700 dark:text-green-300 font-semibold text-sm truncate">
                                                             {isCollabReady ? "Live" : "🔄 Loading..."}
                                                         </div>
                                                         <div className="text-green-600/80 dark:text-green-400/80 text-xs truncate">
@@ -160,54 +160,62 @@ function DocumentWithRealCollab({id}:{id:string}) {
                                                     </div>
                                                 </div>
                                                 
-                                                <div className="flex items-center justify-between">
-                                                    <DocumentStatus 
-                                                        autoSaveStatus={autoSaveStatus}
-                                                        lastModified={autoSaveStatus === 'saved' ? new Date() : undefined}
-                                                    />
+                                                <div className="flex flex-col gap-3 w-full overflow-hidden">
+                                                    <div className="w-full overflow-hidden">
+                                                        <DocumentStatus 
+                                                            autoSaveStatus={autoSaveStatus}
+                                                            lastModified={autoSaveStatus === 'saved' ? new Date() : undefined}
+                                                        />
+                                                    </div>
                                                     
-                                                    <Button
-                                                        onClick={() => setIsShareDialogOpen(true)}
-                                                        variant="outline"
-                                                        size="sm"
-                                                        className="flex items-center space-x-1"
-                                                    >
-                                                        <Share2 size={14} />
-                                                        <span className="text-xs">Share</span>
-                                                    </Button>
+                                                    <div className="flex justify-center sm:justify-end">
+                                                        <Button
+                                                            onClick={() => setIsShareDialogOpen(true)}
+                                                            variant="outline"
+                                                            size="sm"
+                                                            className="flex items-center gap-2 px-4 py-2 animate-[fadeIn_0.3s_ease-out]"
+                                                        >
+                                                            <Share2 size={14} />
+                                                            <span className="text-xs font-medium">Share</span>
+                                                        </Button>
+                                                    </div>
                                                 </div>
                                             </div>
                                             
                                             {/* Desktop Layout (horizontal) */}
-                                            <div className="hidden sm:flex items-center justify-between">
-                                                <div className="flex items-center space-x-3">
-                                                    <div className="p-2 bg-green-100 dark:bg-green-900/50 rounded-full">
+                                            <div className="hidden sm:flex items-center justify-between gap-4 min-w-0 min-h-0">
+                                                <div className="flex items-center gap-4 min-w-0 flex-1 overflow-hidden">
+                                                    <div className="p-2 bg-green-100 dark:bg-green-900/50 rounded-full shrink-0">
                                                         <FileText size={20} className="text-green-600 dark:text-green-400" />
                                                     </div>
-                                                    <div>
-                                                        <div className="text-green-700 dark:text-green-300 font-semibold">
-                                                            {isCollabReady ?  "Collaboration Active" : " Enabling Collaboration..."}
+                                                    <div className="min-w-0 flex-1 overflow-hidden">
+                                                        <div className="text-green-700 dark:text-green-300 font-semibold truncate">
+                                                            {isCollabReady ? "Collaboration Active" : "Enabling Collaboration..."}
                                                         </div>
-                                                        <div className="text-green-600/80 dark:text-green-400/80 text-sm">
-                                                            Document: {data?.title || "Untitled"} • ID: {id.slice(0, 8)}...
+                                                        <div className="text-green-600/80 dark:text-green-400/80 text-sm truncate">
+                                                            <span className="hidden lg:inline">Document: </span>
+                                                            <span className="font-medium">{data?.title || "Untitled"}</span>
+                                                            <span className="hidden xl:inline"> • ID: {id.slice(0, 8)}...</span>
                                                         </div>
                                                     </div>
                                                 </div>
                                                 
-                                                <div className="flex items-center space-x-3">
-                                                    <DocumentStatus 
-                                                        autoSaveStatus={autoSaveStatus}
-                                                        lastModified={autoSaveStatus === 'saved' ? new Date() : undefined}
-                                                    />
+                                                <div className="flex items-center gap-3 shrink-0 overflow-hidden max-w-md">
+                                                    <div className="min-w-0 flex-1 overflow-hidden">
+                                                        <DocumentStatus 
+                                                            autoSaveStatus={autoSaveStatus}
+                                                            lastModified={autoSaveStatus === 'saved' ? new Date() : undefined}
+                                                        />
+                                                    </div>
                                                     
                                                     <Button
                                                         onClick={() => setIsShareDialogOpen(true)}
                                                         variant="outline"
                                                         size="sm"
-                                                        className="flex items-center space-x-2"
+                                                        className="flex items-center gap-2 px-3 py-1.5 shrink-0 animate-[fadeIn_0.3s_ease-out]"
                                                     >
                                                         <Share2 size={16} />
-                                                        <span>Share</span>
+                                                        <span className="hidden md:inline font-medium">Share</span>
                                                     </Button>
                                                 </div>
                                             </div>
@@ -215,18 +223,20 @@ function DocumentWithRealCollab({id}:{id:string}) {
 
                                         {/* Collaboration Status */}
                                         {isCollabReady && (
-                                            <CollaborationStatus 
-                                                isActive={isCollabReady}
-                                                userCount={1}
-                                                roomId={id}
-                                            />
+                                            <div className="w-full overflow-hidden bg-linear-to-r from-blue-50/50 to-indigo-50/50 dark:from-blue-950/20 dark:to-indigo-950/20 rounded-lg p-3 border border-blue-100/50 dark:border-blue-800/30">
+                                                <CollaborationStatus 
+                                                    isActive={isCollabReady}
+                                                    userCount={1}
+                                                    roomId={id}
+                                                />
+                                            </div>
                                         )}
                                     </div>
                                 )}
                             </div>
                             
                             {/* Theme Toggle */}
-                            <div className="ml-6">
+                            <div className="shrink-0 self-start">
                                 <ThemeToggle />
                             </div>
                         </div>
