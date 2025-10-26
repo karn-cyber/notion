@@ -35,7 +35,7 @@ export default function RootLayout({
       <html lang="en" suppressHydrationWarning>
         <body className={`${geistSans.variable} ${geistMono.variable} font-sans`}>
           <ThemeProvider
-            defaultTheme="system"
+            defaultTheme="light"
             storageKey="notion-theme"
           >
             <LiveBlocksProvider>
