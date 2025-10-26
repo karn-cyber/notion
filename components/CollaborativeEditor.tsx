@@ -48,6 +48,13 @@ function CollaborativeEditor({ roomId }: CollaborativeEditorProps) {
   const [, updateMyPresence] = useMyPresence()
   const others = useOthers()
   
+  // Debug logging
+  useEffect(() => {
+    console.log("🔍 CollaborativeEditor mounted for room:", roomId)
+    console.log("🔍 Connected users:", others.length)
+    console.log("🔍 Current user:", user?.emailAddresses[0]?.emailAddress)
+  }, [roomId, others.length, user])
+  
   // Get content with fallback
   const content = useStorage((root) => root?.content || "")
   
