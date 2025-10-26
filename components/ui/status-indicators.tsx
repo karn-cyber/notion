@@ -166,14 +166,29 @@ export function DocumentStatus({
     }).format(date)
   }
 
+  const formatTimeShort = (date: Date) => {
+    return new Intl.DateTimeFormat('en-US', {
+      hour: '2-digit',
+      minute: '2-digit'
+    }).format(date)
+  }
+
   return (
-    <div className={cn("flex items-center space-x-3", className)}>
+    <div className={cn("flex items-center space-x-2 sm:space-x-3", className)}>
       <StatusIndicator status={autoSaveStatus} size="sm" />
       
       {lastModified && autoSaveStatus === 'saved' && (
-        <Badge variant="outline" className="text-xs">
-          Last saved: {formatTime(lastModified)}
-        </Badge>
+        <>
+          {/* Mobile version - shorter text */}
+          <Badge variant="outline" className="text-xs sm:hidden">
+            {formatTimeShort(lastModified)}
+          </Badge>
+          
+          {/* Desktop version - full text */}
+          <Badge variant="outline" className="text-xs hidden sm:inline-flex">
+            Last saved: {formatTime(lastModified)}
+          </Badge>
+        </>
       )}
     </div>
   )

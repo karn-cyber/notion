@@ -140,41 +140,76 @@ function DocumentWithRealCollab({id}:{id:string}) {
                                     </div>
                                 )}
 
-                                {/* Document Status */}
+                                {/* Document Status - Mobile Responsive */}
                                 {!loading && data && (
                                     <div className="space-y-3">
-                                        <div className="flex items-center justify-between p-4 bg-linear-to-r from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30 rounded-lg border border-green-200/50 dark:border-green-800/30">
-                                            <div className="flex items-center space-x-3">
-                                                <div className="p-2 bg-green-100 dark:bg-green-900/50 rounded-full">
-                                                    <FileText size={20} className="text-green-600 dark:text-green-400" />
+                                        <div className="p-3 sm:p-4 bg-linear-to-r from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30 rounded-lg border border-green-200/50 dark:border-green-800/30">
+                                            {/* Mobile Layout (stacked) */}
+                                            <div className="block sm:hidden space-y-3">
+                                                <div className="flex items-center space-x-3">
+                                                    <div className="p-2 bg-green-100 dark:bg-green-900/50 rounded-full">
+                                                        <FileText size={18} className="text-green-600 dark:text-green-400" />
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="text-green-700 dark:text-green-300 font-semibold text-sm">
+                                                            {isCollabReady ? "✨ Live" : "🔄 Loading..."}
+                                                        </div>
+                                                        <div className="text-green-600/80 dark:text-green-400/80 text-xs truncate">
+                                                            {data?.title || "Untitled"}
+                                                        </div>
+                                                    </div>
                                                 </div>
-                                                <div>
-                                                    <div className="text-green-700 dark:text-green-300 font-semibold">
-                                                        {isCollabReady ? "✨ Collaboration Active" : "🔄 Enabling Collaboration..."}
-                                                    </div>
-                                                    <div className="text-green-600/80 dark:text-green-400/80 text-sm">
-                                                        Document: {data?.title || "Untitled"} • ID: {id.slice(0, 8)}...
-                                                    </div>
+                                                
+                                                <div className="flex items-center justify-between">
+                                                    <DocumentStatus 
+                                                        autoSaveStatus={autoSaveStatus}
+                                                        lastModified={autoSaveStatus === 'saved' ? new Date() : undefined}
+                                                    />
+                                                    
+                                                    <Button
+                                                        onClick={() => setIsShareDialogOpen(true)}
+                                                        variant="outline"
+                                                        size="sm"
+                                                        className="flex items-center space-x-1"
+                                                    >
+                                                        <Share2 size={14} />
+                                                        <span className="text-xs">Share</span>
+                                                    </Button>
                                                 </div>
                                             </div>
                                             
-                                            <div className="flex items-center space-x-3">
-                                                <DocumentStatus 
-                                                    autoSaveStatus={autoSaveStatus}
-                                                    lastModified={autoSaveStatus === 'saved' ? new Date() : undefined}
-                                                />
+                                            {/* Desktop Layout (horizontal) */}
+                                            <div className="hidden sm:flex items-center justify-between">
+                                                <div className="flex items-center space-x-3">
+                                                    <div className="p-2 bg-green-100 dark:bg-green-900/50 rounded-full">
+                                                        <FileText size={20} className="text-green-600 dark:text-green-400" />
+                                                    </div>
+                                                    <div>
+                                                        <div className="text-green-700 dark:text-green-300 font-semibold">
+                                                            {isCollabReady ? "✨ Collaboration Active" : "🔄 Enabling Collaboration..."}
+                                                        </div>
+                                                        <div className="text-green-600/80 dark:text-green-400/80 text-sm">
+                                                            Document: {data?.title || "Untitled"} • ID: {id.slice(0, 8)}...
+                                                        </div>
+                                                    </div>
+                                                </div>
                                                 
-                                                <Button
-                                                    onClick={() => setIsShareDialogOpen(true)}
-                                                    variant="outline"
-                                                    size="sm"
-                                                    className="flex items-center space-x-2"
-                                                >
-                                                    <Share2 size={16} />
-                                                    <span>Share</span>
-                                                </Button>
-                                                
-                                                {!isCollabReady && <LoadingSpinner variant="icon" size={16} />}
+                                                <div className="flex items-center space-x-3">
+                                                    <DocumentStatus 
+                                                        autoSaveStatus={autoSaveStatus}
+                                                        lastModified={autoSaveStatus === 'saved' ? new Date() : undefined}
+                                                    />
+                                                    
+                                                    <Button
+                                                        onClick={() => setIsShareDialogOpen(true)}
+                                                        variant="outline"
+                                                        size="sm"
+                                                        className="flex items-center space-x-2"
+                                                    >
+                                                        <Share2 size={16} />
+                                                        <span>Share</span>
+                                                    </Button>
+                                                </div>
                                             </div>
                                         </div>
 
@@ -278,9 +313,46 @@ function DocumentWithRealCollab({id}:{id:string}) {
                         ) : (
                             <CardContent className="p-0">
                                 <div className="space-y-4">
-                                    {/* Collaboration Header */}
-                                    <div className="p-4 bg-linear-to-r from-blue-50/80 to-indigo-50/80 dark:from-blue-950/30 dark:to-indigo-950/30 border-b border-border">
-                                        <div className="flex items-center justify-between">
+                                    {/* Collaboration Header - Mobile Responsive */}
+                                    <div className="p-2 sm:p-4 bg-linear-to-r from-blue-50/80 to-indigo-50/80 dark:from-blue-950/30 dark:to-indigo-950/30 border-b border-border">
+                                        {/* Mobile Layout (stacked) */}
+                                        <div className="block sm:hidden space-y-2">
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center space-x-2">
+                                                    <div className="p-1.5 bg-blue-100 dark:bg-blue-900/50 rounded-full">
+                                                        <Users size={16} className="text-blue-600 dark:text-blue-400" />
+                                                    </div>
+                                                    <div>
+                                                        <div className="font-semibold text-blue-700 dark:text-blue-300 text-sm">
+                                                            ✨ Live
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                
+                                                <Badge variant="success" className="flex items-center space-x-1 text-xs">
+                                                    <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></div>
+                                                    <span>Online</span>
+                                                </Badge>
+                                            </div>
+                                            
+                                            <div className="flex items-center justify-between">
+                                                <div className="text-blue-600/80 dark:text-blue-400/80 text-xs truncate flex-1">
+                                                    Real-time sync active
+                                                </div>
+                                                <UserAvatar
+                                                    name={user?.firstName || user?.emailAddresses[0]?.emailAddress?.split('@')[0] || 'User'}
+                                                    color={userColor}
+                                                    size="sm"
+                                                    showName={false}
+                                                    isCurrentUser={true}
+                                                    showStatus={true}
+                                                    status="online"
+                                                />
+                                            </div>
+                                        </div>
+                                        
+                                        {/* Desktop Layout (horizontal) */}
+                                        <div className="hidden sm:flex items-center justify-between">
                                             <div className="flex items-center space-x-3">
                                                 <div className="p-2 bg-blue-100 dark:bg-blue-900/50 rounded-full">
                                                     <Users size={20} className="text-blue-600 dark:text-blue-400" />

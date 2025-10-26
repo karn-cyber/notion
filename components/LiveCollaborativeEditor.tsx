@@ -220,55 +220,106 @@ function LiveCollaborativeEditor({
 
   return (
     <div className="relative h-full">
-      {/* Collaboration status bar */}
+      {/* Collaboration status bar - Mobile Responsive */}
       <Card className="mb-4">
-        <CardContent className="p-4">
-          <div className="flex items-center justify-between">
+        <CardContent className="p-1 sm:p-3">
+          {/* Ultra Compact Layout for mobile screens */}
+          <div className="sm:hidden">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2 min-w-0 flex-1">
+                <div className={cn(
+                  "w-2 h-2 rounded-full shrink-0",
+                  isConnected ? "bg-green-500 animate-pulse" : "bg-red-500"
+                )} />
+                <span className="text-xs text-muted-foreground truncate">
+                  {isConnected ? 'Live' : 'Off'} • {others.length + 1}
+                </span>
+              </div>
+              
+              <div className="flex items-center space-x-1 shrink-0">
+                <div className="flex items-center -space-x-1">
+                  <UserAvatar
+                    name={userName}
+                    color={userColor}
+                    size="sm"
+                    className="w-5 h-5 ring-1 ring-primary"
+                  />
+                  {others.slice(0, 1).map((other) => (
+                    <UserAvatar
+                      key={other.connectionId}
+                      name={other.presence?.name || 'Anonymous'}
+                      color={other.presence?.color || '#6366f1'}
+                      size="sm"
+                      className="w-5 h-5 ring-1 ring-background"
+                    />
+                  ))}
+                  {others.length > 1 && (
+                    <div className="w-5 h-5 rounded-full bg-muted text-xs flex items-center justify-center ring-1 ring-background">
+                      +{others.length - 1}
+                    </div>
+                  )}
+                </div>
+                {others.some(other => other.presence?.isTyping) && (
+                  <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Desktop Layout */}
+          <div className="hidden sm:flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <StatusIndicator 
                 status={isConnected ? 'connected' : 'disconnected'} 
-                text={isConnected ? 'Connected' : 'Connecting...'} 
+                text={isConnected ? 'Live Collaboration' : 'Connecting...'} 
                 size="sm"
               />
               
-              <div className="flex items-center space-x-2">
-                <Users size={16} className="text-muted-foreground" />
-                <span className="text-sm text-muted-foreground">
-                  {others.length + 1} user{others.length === 0 ? '' : 's'} active
-                </span>
-                {/* Live typing indicator */}
-                {others.some(other => other.presence?.isTyping) && (
-                  <div className="flex items-center space-x-1 text-xs text-green-600">
-                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                    <span>Someone is typing...</span>
+              <div className="flex items-center -space-x-2">
+                <UserAvatar
+                  name={userName}
+                  color={userColor}
+                  size="sm"
+                  showStatus={true}
+                  status="online"
+                  className="ring-2 ring-primary border-2 border-background"
+                />
+                
+                {others.slice(0, 4).map((other) => (
+                  <UserAvatar
+                    key={other.connectionId}
+                    name={other.presence?.name || 'Anonymous'}
+                    color={other.presence?.color || '#6366f1'}
+                    size="sm"
+                    showStatus={true}
+                    status="online"
+                    className="ring-2 ring-background"
+                  />
+                ))}
+                
+                {others.length > 4 && (
+                  <div className="w-8 h-8 rounded-full bg-muted border-2 border-background flex items-center justify-center text-xs font-medium text-muted-foreground">
+                    +{others.length - 4}
                   </div>
                 )}
               </div>
             </div>
             
-            {/* Active users */}
-            <div className="flex items-center space-x-2">
-              {/* Current user */}
-              <UserAvatar
-                name={userName}
-                color={userColor}
-                size="sm"
-                showStatus={true}
-                status="online"
-                className="ring-2 ring-primary"
-              />
+            <div className="flex items-center space-x-3">
+              <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+                <Users size={16} />
+                <span>{others.length + 1} collaborator{others.length === 0 ? '' : 's'}</span>
+              </div>
               
-              {/* Other users */}
-              {others.map((other) => (
-                <UserAvatar
-                  key={other.connectionId}
-                  name={other.presence?.name || 'Anonymous'}
-                  color={other.presence?.color || '#gray'}
-                  size="sm"
-                  showStatus={true}
-                  status="online"
-                />
-              ))}
+              {others.some(other => other.presence?.isTyping) && (
+                <div className="flex items-center space-x-2 text-sm text-green-600">
+                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                  <span>
+                    {others.filter(other => other.presence?.isTyping).map(other => other.presence?.name || 'Someone').slice(0, 2).join(', ')} 
+                    {' '}typing...
+                  </span>
+                </div>
+              )}
             </div>
           </div>
         </CardContent>
