@@ -146,7 +146,7 @@ export default function BlockNoteCollaborativeEditor({
     }
   })
 
-  // Initialize BlockNote editor with collaborative features
+  // Initialize BlockNote editor with enhanced real-time collaboration
   const editor = useCreateBlockNote({
     initialContent: storedBlocks.length > 0 ? storedBlocks : (
       initialContent ? [{ type: "paragraph", content: initialContent }] : undefined
@@ -163,7 +163,7 @@ export default function BlockNoteCollaborativeEditor({
         reader.readAsDataURL(file)
       })
     },
-    // Fixed editor configuration for better collaboration
+    // Optimized for real-time collaboration through Liveblocks
     defaultStyles: true,
     animations: true,
   })
@@ -189,17 +189,12 @@ export default function BlockNoteCollaborativeEditor({
     return () => clearTimeout(initTimer)
   }, [])
 
-  // Stable real-time content synchronization
-  const lastUpdateRef = useRef(0)
+  // Enhanced real-time content synchronization with instant updates
   const isUpdatingRef = useRef(false)
+  const lastFirebaseUpdateRef = useRef(0)
   
   const handleContentChange = useCallback(async () => {
     if (!editor || isUpdatingRef.current) return
-
-    const now = Date.now()
-    // Reasonable throttle to prevent conflicts
-    if (now - lastUpdateRef.current < 300) return
-    lastUpdateRef.current = now
 
     isUpdatingRef.current = true
 
@@ -209,15 +204,19 @@ export default function BlockNoteCollaborativeEditor({
       // Convert blocks to markdown for Firebase storage
       const markdown = await editor.blocksToMarkdownLossy(blocks)
       
-      // Update both Liveblocks and Firebase
+      // Immediate Liveblocks update for real-time sync
       updateBlocks(blocks)
       updateContent(markdown)
-      onContentChange(markdown)
       
-      // Update last saved time
-      setLastSaved(new Date())
+      // Debounced Firebase save to reduce server calls
+      const now = Date.now()
+      if (now - lastFirebaseUpdateRef.current > 1000) {
+        lastFirebaseUpdateRef.current = now
+        onContentChange(markdown)
+        setLastSaved(new Date())
+      }
 
-      // Update typing status
+      // Update typing status immediately
       updateMyPresence({
         cursor: myPresence.cursor,
         name: userName,
@@ -241,27 +240,69 @@ export default function BlockNoteCollaborativeEditor({
     }
   }, [editor, updateBlocks, updateContent, onContentChange, updateMyPresence, myPresence.cursor, userName, userColor])
 
-  // Simple and stable document synchronization
+  // Real-time document synchronization with immediate updates
   useEffect(() => {
     if (!editor) return
 
-    // Subscribe to document changes with proper debouncing
+    // Subscribe to document changes with immediate real-time sync
     const unsubscribe = editor.onChange(() => {
-      // Use a simple timeout to avoid rapid-fire updates
-      setTimeout(() => {
-        handleContentChange()
-      }, 100)
+      // Immediate update for real-time collaboration
+      handleContentChange()
     })
 
     return unsubscribe
   }, [editor, handleContentChange])
 
-  // Simplified cursor tracking
+  // Enhanced keyboard event handling for instant typing feedback
+  useEffect(() => {
+    if (!editor) return
+
+    const handleKeyDown = () => {
+      // Trigger immediate typing status for better real-time feedback
+      updateMyPresence({
+        cursor: myPresence.cursor,
+        name: userName,
+        color: userColor,
+        isTyping: true,
+        lastSeen: Date.now()
+      })
+    }
+
+    const handleKeyUp = () => {
+      // Delayed typing status clear
+      setTimeout(() => {
+        updateMyPresence({
+          cursor: myPresence.cursor,
+          name: userName,
+          color: userColor,
+          isTyping: false,
+          lastSeen: Date.now()
+        })
+      }, 1000)
+    }
+
+    // Add event listeners to the editor's DOM element
+    const editorElement = document.querySelector('[data-testid="blocknote-editor"]') || 
+                          document.querySelector('.ProseMirror') ||
+                          document.querySelector('[contenteditable="true"]')
+    
+    if (editorElement) {
+      editorElement.addEventListener('keydown', handleKeyDown as EventListener)
+      editorElement.addEventListener('keyup', handleKeyUp as EventListener)
+      
+      return () => {
+        editorElement.removeEventListener('keydown', handleKeyDown as EventListener)
+        editorElement.removeEventListener('keyup', handleKeyUp as EventListener)
+      }
+    }
+  }, [editor, updateMyPresence, myPresence.cursor, userName, userColor])
+
+  // Enhanced cursor tracking with immediate updates
   const lastCursorUpdateRef = useRef(0)
   const handleMouseMove = useCallback((event: React.MouseEvent) => {
     const now = Date.now()
-    // Throttle cursor updates to 30fps for good performance
-    if (now - lastCursorUpdateRef.current < 33) return
+    // More frequent cursor updates for smoother real-time experience
+    if (now - lastCursorUpdateRef.current < 16) return // ~60fps
     
     lastCursorUpdateRef.current = now
     const rect = event.currentTarget.getBoundingClientRect()
@@ -302,29 +343,32 @@ export default function BlockNoteCollaborativeEditor({
     })
   }, [updateMyPresence, userName, userColor])
 
-  // Safe remote sync that avoids conflicts
+  // Optimized remote sync for instant collaboration
   const lastSyncRef = useRef(0)
   useEffect(() => {
     if (!editor || !storedBlocks || storedBlocks.length === 0 || isUpdatingRef.current) return
 
     const now = Date.now()
-    // More conservative sync timing
-    if (now - lastSyncRef.current < 500) return
+    // More frequent sync for better real-time experience
+    if (now - lastSyncRef.current < 100) return
     lastSyncRef.current = now
 
     const currentBlocks = editor.document
+    const currentBlocksJson = JSON.stringify(currentBlocks)
+    const storedBlocksJson = JSON.stringify(storedBlocks)
     
-    // Simple comparison to avoid unnecessary updates
-    if (currentBlocks.length !== storedBlocks.length) {
+    // Only update if content actually changed
+    if (currentBlocksJson !== storedBlocksJson) {
       try {
         isUpdatingRef.current = true
         editor.replaceBlocks(currentBlocks, storedBlocks)
-      } catch {
-        console.log("Sync skipped - editor conflict")
+        console.log("📝 Real-time sync applied from remote changes")
+      } catch (error) {
+        console.log("Sync skipped - editor conflict", error)
       } finally {
         setTimeout(() => {
           isUpdatingRef.current = false
-        }, 100)
+        }, 50) // Faster recovery time
       }
     }
   }, [editor, storedBlocks])
